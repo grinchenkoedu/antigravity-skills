@@ -3,10 +3,10 @@
 **🇬🇧 English** · [🇺🇦 Українська](README.uk.md)
 
 <p>
-  <img src="https://img.shields.io/badge/Antigravity_Code-D97757?style=for-the-badge&logo=antigravity&logoColor=white" alt="Google Antigravity" /> <img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /> <img src="https://img.shields.io/badge/macOS_%7C_Linux_%7C_Windows-4A4A4A?style=for-the-badge" alt="macOS | Linux | Windows" /> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Google_Antigravity-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Antigravity" /> <img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /> <img src="https://img.shields.io/badge/macOS_%7C_Linux_%7C_Windows-4A4A4A?style=for-the-badge" alt="macOS | Linux | Windows" /> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
 </p>
 
-Six skills for [Google Antigravity](https://antigravity.com/antigravity-code) that cover an ordinary
+Six skills for [Google Antigravity](https://antigravity.google/docs) that cover an ordinary
 development day: work out what to build, build it, check your own work, review a colleague's
 pull request, deal with the comments on yours, and prove the result actually works.
 
@@ -53,7 +53,7 @@ Two of them do (`/implement`, `/pr-resolve`), and both tell you what they are ab
 
 You need:
 
-1. **Google Antigravity** installed and working — [installation guide](https://docs.gemini.com/en/docs/antigravity-code/overview).
+1. **Google Antigravity** installed and working — [installation guide](https://antigravity.google/docs).
 2. **git** — you have this already if you are cloning repositories.
    **On Windows, install [Git for Windows](https://git-scm.com/download/win)**, which includes
    Git Bash. Google Antigravity uses it to run commands, and these skills assume it is there.
