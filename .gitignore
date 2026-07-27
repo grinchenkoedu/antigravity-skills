@@ -1,0 +1,9 @@
+.DS_Store
+.idea/
+.gemini/repo-profile.json
+
+# scratch reports written by the skills — working notes, not history
+REVIEW.md
+SELF_REVIEW.md
+VERIFY.md
+PR_REVIEW_*.md

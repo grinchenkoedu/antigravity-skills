@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Google_Antigravity-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Antigravity" /> <img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /> <img src="https://img.shields.io/badge/macOS_%7C_Linux_%7C_Windows-4A4A4A?style=for-the-badge" alt="macOS | Linux | Windows" /> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
 </p>
 
-Six skills for [Google Antigravity](https://antigravity.google/docs) that cover an ordinary
+Skills for [Google Antigravity](https://antigravity.google/docs) that cover an ordinary
 development day: work out what to build, build it, check your own work, review a colleague's
 pull request, deal with the comments on yours, and prove the result actually works.
 
@@ -24,7 +24,7 @@ MIT licensed.
 - [What is this, exactly?](#what-is-this-exactly)
 - [Before you start](#before-you-start)
 - [Installation and Updating](#installation-and-updating)
-- [The six skills](#the-six-skills)
+- [The skills](#the-skills)
 - [A worked example](#a-worked-example-start-to-finish)
 - [Each skill in detail](#each-skill-in-detail)
 - [Writing a task file](#writing-a-task-file)
@@ -122,7 +122,7 @@ Type `/` in Google Antigravity and you will see `/plan`, `/implement`, `/review`
 > cp -R ~/.gemini/skills/* .agents/skills/
 > ```
 
-## The six skills
+## The skills
 
 They follow the order of the work:
 
@@ -311,11 +311,16 @@ decide what to say.
 ### `/pr-resolve` — act on comments on your pull request
 
 ```
+/pr-resolve https://github.com/grinchenkoedu/local_gdo/pull/42
 /pr-resolve 42
 /pr-resolve 42 --dry-run
+/pr-resolve 42 --in ~/work        # where to put a working copy, if one must be made
 ```
 
-For **your own** pull request. It collects every comment, and — this is the important part —
+For **your own** pull request. **A URL works from anywhere** — any directory, another project,
+or outside a repository entirely: it resolves the repository from the URL and reuses a local
+clone if you have one, or makes one and tells you where. A bare number only works inside a clone
+of the repository that owns the PR, since there is nothing else to resolve it against. It collects every comment, and — this is the important part —
 **gives each one a verdict before changing any code**:
 
 - **agree** → the smallest fix that resolves it, as its own commit;
@@ -385,7 +390,7 @@ Google Antigravity provides a model selection UI for the primary agent and allow
 How these skills keep costs and latency down:
 
 - **No excessive sub-agents by default.** Background subagents are only invoked when explicitly requested (e.g. `--deep`).
-- **The stack is detected once**, then cached in `.gemini/repo-profile.json` and reused by all six skills. Add that file to `.gitignore`.
+- **The stack is detected once**, then cached in `.gemini/repo-profile.json` and reused by every skill. Add that file to `.gitignore`.
 - **Reading is capped.** At most five files read in full; everything else judged from the diff.
 - **Answers go in the chat**, not into generated report files.
 - **`/implement` is resumable**, so if you stop the task it can be resumed.

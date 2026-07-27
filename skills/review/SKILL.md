@@ -23,7 +23,7 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 ## Step 1 — Work out what changed
 
-Read `.gemini/repo-profile.json` (see `reference/repo-profile.md` in this plugin — detect and
+Read `.gemini/repo-profile.json` (see `reference/repo-profile.md` alongside these skills — detect and
 cache it if missing).
 
 ```bash
@@ -154,8 +154,8 @@ one blocker. Print its absolute path.
 - **Absolute paths** everywhere, so they are clickable in an editor.
 - **Never suggest `--no-verify`, `--force`, or `git push --force`.** If a hook fails, the fix
   is the code, not the flag.
-- **English review**, even when the code and its comments are in another language. Quote the
-  original when quoting.
+- **Write the review in English or Ukrainian** — match the language the developer is using.
+  Quote code and comments in their original language, whatever that is.
 - **No diff dumps.** One sentence per finding.
 
 ## Edge cases
