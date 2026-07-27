@@ -1,6 +1,7 @@
 ---
 name: pr-resolve
 description: Work through the review comments on your own pull request — every finding gets a verdict before any code changes (agree, disagree with evidence, or ask you), then fixes land one commit per finding, get pushed, and each thread gets a reply. Never fixes blindly; reviewers and bots are sometimes wrong.
+model: flash
 argument-hint: "<pr-number-or-url> [--repo <owner/name>] [--dry-run]"
 user-invocable: true
 ---

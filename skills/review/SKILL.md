@@ -1,6 +1,7 @@
 ---
 name: review
 description: Review your own changes before you push or open a pull request — a severity-rated list of what to fix, checked against the repository's own conventions, a lint pass over the changed files, its tests, and the failure modes that green tests miss. Review-only; never edits, commits or pushes.
+model: pro
 argument-hint: "[branch] [--target <base>] [--deep] [--report]"
 user-invocable: true
 ---

@@ -1,6 +1,7 @@
 ---
 name: verify
 description: Check that a change actually works — run the project's tests, then drive the real thing (the command, the page, the function) and confirm the effect. Reports a clear verdict, and says honestly what could not be checked and why, instead of quietly skipping it.
+model: flash
 argument-hint: "[<pr-number> | <branch>] [--tests-only] [--report]"
 user-invocable: true
 ---
