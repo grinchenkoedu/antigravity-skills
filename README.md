@@ -115,6 +115,13 @@ Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigrav
 
 Type `/` in Google Antigravity and you will see `/plan`, `/implement`, `/review`, `/pr-review`, `/pr-resolve`, and `/verify` in the slash commands menu.
 
+> [!NOTE]
+> **Antigravity IDE and App:** The global installation above makes these skills available in the **Antigravity CLI (`agy`)**. The Antigravity IDE and Antigravity 2.0 (App) handle custom skills on a per-project basis. To use them there, copy the skills into your project's local `.agents/skills/` directory:
+> ```bash
+> mkdir -p .agents/skills
+> cp -R ~/.gemini/skills/* .agents/skills/
+> ```
+
 ## The six skills
 
 They follow the order of the work:
