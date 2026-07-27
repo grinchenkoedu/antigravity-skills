@@ -116,7 +116,10 @@ Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigrav
 > **Antigravity IDE та App:** Глобальне встановлення, описане вище, робить навички доступними у **Antigravity CLI (`agy`)**. Antigravity IDE та Antigravity 2.0 (App) керують кастомними навичками на рівні окремих проєктів. Щоб використовувати їх там, скопіюйте навички до локальної директорії вашого проєкту `.agents/skills/`:
 > ```bash
 > mkdir -p .agents/skills
-> cp -R ~/.gemini/skills/* .agents/skills/
+> # спершу приберіть попередні копії без префікса, щоб перейменована навичка
+> # не лишилася поруч зі своєю заміною й не завантажувалась двічі
+> rm -rf .agents/skills/{review,plan,implement,pr-review,pr-resolve,verify,reference}
+> cp -R ~/.gemini/skills/gku-* .agents/skills/
 > ```
 
 ## Навички
