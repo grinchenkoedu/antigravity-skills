@@ -23,12 +23,12 @@ MIT licensed.
 
 - [What is this, exactly?](#what-is-this-exactly)
 - [Before you start](#before-you-start)
-- [Installation](#installation)
+- [Installation and Updating](#installation-and-updating)
 - [The six skills](#the-six-skills)
 - [A worked example](#a-worked-example-start-to-finish)
 - [Each skill in detail](#each-skill-in-detail)
 - [Writing a task file](#writing-a-task-file)
-- [Using these on a Pro plan](#using-these-on-a-pro-plan)
+- [Model Selection](#model-selection)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 
