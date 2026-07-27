@@ -97,26 +97,20 @@ You need:
 **Windows works.** Use Git Bash, as in step 2. The skills detect your platform on first use and
 store commands that work there. WSL also works and behaves like Linux.
 
-## Installation
+## Installation and Updating
 
-Simply clone this repository and drop the contents of the `skills` directory into your `~/.gemini/antigravity-cli/skills/` (global) or a project's `.gemini/skills/` (local) directory.
+You can install or update the skills automatically. The script will fetch the latest version from this repository and install it into your global Antigravity skills directory (`~/.gemini/antigravity-cli/skills/`).
 
-macOS, Linux, or Git Bash on Windows:
+**macOS, Linux, or Git Bash on Windows:**
 
 ```bash
-git clone https://github.com/grinchenkoedu/antigravity-skills.git
-mkdir -p ~/.gemini/antigravity-cli/skills
-cp -R antigravity-skills/skills/* ~/.gemini/antigravity-cli/skills/
-cp -R antigravity-skills/reference ~/.gemini/antigravity-cli/skills/reference
+curl -fsSL https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/main/install.sh | bash
 ```
 
-Windows PowerShell:
+**Windows PowerShell:**
 
 ```powershell
-git clone https://github.com/grinchenkoedu/antigravity-skills.git
-New-Item -ItemType Directory -Force "$HOME\.gemini\antigravity-cli\skills" | Out-Null
-Copy-Item -Recurse -Force antigravity-skills\skills\* "$HOME\.gemini\antigravity-cli\skills\"
-Copy-Item -Recurse -Force antigravity-skills\reference "$HOME\.gemini\antigravity-cli\skills\reference"
+Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/main/install.ps1' | Invoke-Expression
 ```
 
 Type `/` in Google Antigravity and you will see `/plan`, `/implement`, `/review`, `/pr-review`, `/pr-resolve`, and `/verify` in the slash commands menu.
