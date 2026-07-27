@@ -23,7 +23,7 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 ## Step 1 — Work out what changed
 
-Read `.gemini/repo-profile.json` (see `reference/repo-profile.md` in this plugin — detect and
+Read `.gemini/repo-profile.json` (see `reference/repo-profile.md` alongside these skills — detect and
 cache it if missing).
 
 ```bash

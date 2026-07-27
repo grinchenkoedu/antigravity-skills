@@ -56,7 +56,7 @@ Stop as soon as the family is clear. This should be a handful of file checks, no
    commands stored here.
 1. **Base branch** — `git symbolic-ref refs/remotes/origin/HEAD` (strip `refs/remotes/origin/`).
    Falls back to whichever of `master` / `main` exists. Do not assume.
-2. **Standards doc** — first of `AGENTS.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md` that
+2. **Standards doc** — first of `AGENTS.md`, `CONTRIBUTING.md`, `README.md` that
    exists. Skills read *this* file for conventions; there is no hardcoded rules file.
 3. **Family**, by marker file:
 
@@ -259,7 +259,7 @@ is normally **Git Bash** (bundled with Git for Windows), so ordinary POSIX comma
   and record `"shell": "powershell"` so skills stop assuming POSIX.
 
 None of this changes what the skills *do* — only the exact strings stored in the profile. That
-is the point of caching it: this is worked out once, not argued about six times.
+is the point of caching it: this is worked out once, not re-derived by every skill.
 
 ## Data-safety rules
 

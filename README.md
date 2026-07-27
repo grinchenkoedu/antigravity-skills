@@ -314,6 +314,7 @@ decide what to say.
 /pr-resolve https://github.com/grinchenkoedu/local_gdo/pull/42
 /pr-resolve 42
 /pr-resolve 42 --dry-run
+/pr-resolve 42 --in ~/work        # where to put a working copy, if one must be made
 ```
 
 For **your own** pull request. **A URL works from anywhere** — any directory, another project,
@@ -389,7 +390,7 @@ Google Antigravity provides a model selection UI for the primary agent and allow
 How these skills keep costs and latency down:
 
 - **No excessive sub-agents by default.** Background subagents are only invoked when explicitly requested (e.g. `--deep`).
-- **The stack is detected once**, then cached in `.gemini/repo-profile.json` and reused by all six skills. Add that file to `.gitignore`.
+- **The stack is detected once**, then cached in `.gemini/repo-profile.json` and reused by every skill. Add that file to `.gitignore`.
 - **Reading is capped.** At most five files read in full; everything else judged from the diff.
 - **Answers go in the chat**, not into generated report files.
 - **`/implement` is resumable**, so if you stop the task it can be resumed.
