@@ -1,12 +1,12 @@
 ---
-name: pr-resolve
+name: gku-pr-resolve
 description: Work through the review comments on your own pull request, from any directory — pass a URL and it resolves the repository, reusing a local clone or making one. Every finding gets a verdict before any code changes (agree, disagree with evidence, or ask you), then fixes land one commit per finding, get pushed, and each thread gets a reply. Never fixes blindly; reviewers and bots are sometimes wrong.
 model: flash
 argument-hint: "<pr-url | pr-number> [--repo <owner/name>] [--in <path>] [--dry-run]"
 user-invocable: true
 ---
 
-# /pr-resolve — act on the comments on your pull request
+# /gku-pr-resolve — act on the comments on your pull request
 
 Someone (usually the automated reviewer, sometimes a colleague) left comments. This works
 through all of them in one pass, without touching whatever you currently have checked out.
@@ -50,7 +50,7 @@ gh pr view <n> --repo <owner>/<repo> --json number,state,headRefName,baseRefName
 ```
 
 Refuse if it is not open. Refuse if the author is not you — for someone else's PR, use
-`/pr-review` and hand them the findings.
+`/gku-pr-review` and hand them the findings.
 
 ## Step 2 — Collect every finding
 

@@ -1,12 +1,12 @@
 ---
-name: pr-review
+name: gku-pr-review
 description: Deep review of someone else's pull request in an isolated worktree — hunts the failures that automated review misses (broken error paths, infinite loops, races, blast radius, claim-vs-code drift), deduplicates against the bot's comments, and gives a short verdict in chat. Read-only; never edits, pushes or posts.
 model: pro
 argument-hint: "<pr-number-or-url> [--repo <owner/name>] [--deep] [--report]"
 user-invocable: true
 ---
 
-# /pr-review — review someone else's pull request
+# /gku-pr-review — review someone else's pull request
 
 The last check before a change lands. By the time this runs, an automated reviewer has
 usually already commented and CI has usually already passed — so this skill deliberately does
@@ -15,7 +15,7 @@ usually already commented and CI has usually already passed — so this skill de
 Read-only: it never edits, commits, pushes, or posts a comment. You paste what you want to
 say yourself.
 
-For your *own* changes before pushing, use `/review` instead.
+For your *own* changes before pushing, use `/gku-review` instead.
 
 ## What to skip, and what to hunt
 
@@ -33,7 +33,7 @@ real defect: report the wrong value it produces, not the style rule it breaks.
 - **Races and double-submits** — check-then-act, a form submitted twice, a scheduled task
   overlapping its previous run, a unique constraint that deduplicates the *row* but not the
   *action*.
-- **Data safety** — see the data-safety rules in `reference/repo-profile.md`. Unbounded mass
+- **Data safety** — see the data-safety rules in `gku-reference/repo-profile.md`. Unbounded mass
   updates, batch scripts with no dry-run, fix scripts that duplicate when re-run.
 - **Blast radius** — who calls the changed code. Renamed methods with stale callers, listeners
   on renamed events, a schema change against a table that already holds real rows.
@@ -87,7 +87,7 @@ git diff --stat <baseRefName>...HEAD
 git diff --name-status <baseRefName>...HEAD
 ```
 
-Read in the priority order from `/review` step 2, with the same **cap of five files read in
+Read in the priority order from `/gku-review` step 2, with the same **cap of five files read in
 full** plus the unchanged code immediately around them. Everything else is judged from the
 diff, and the review says so.
 
