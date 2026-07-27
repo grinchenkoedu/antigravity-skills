@@ -3,7 +3,7 @@ set -e
 
 REPO_URL="https://github.com/grinchenkoedu/antigravity-skills.git"
 CLONE_DIR="/tmp/antigravity-skills-tmp"
-TARGET_DIR="$HOME/.gemini/antigravity-cli/skills"
+TARGET_DIR="$HOME/.gemini/skills"
 
 echo "Fetching latest skills from $REPO_URL..."
 

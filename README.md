@@ -99,7 +99,7 @@ store commands that work there. WSL also works and behaves like Linux.
 
 ## Installation and Updating
 
-You can install or update the skills automatically. The script will fetch the latest version from this repository and install it into your global Antigravity skills directory (`~/.gemini/antigravity-cli/skills/`).
+You can install or update the skills automatically. The script will fetch the latest version from this repository and install it into your global Antigravity skills directory (`~/.gemini/skills/`).
 
 **macOS, Linux, or Git Bash on Windows:**
 
@@ -399,7 +399,7 @@ Practical advice:
 ## Troubleshooting
 
 **The commands do not appear after installing.**
-Restart Google Antigravity. Check that the skills are in `~/.gemini/antigravity-cli/skills/`.
+Restart Google Antigravity. Check that the skills are in `~/.gemini/skills/`.
 
 **`/pr-review` says it cannot find the pull request.**
 Check `gh auth status`. For a private repository you need access, and the token needs the

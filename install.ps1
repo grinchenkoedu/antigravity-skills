@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $RepoUrl = "https://github.com/grinchenkoedu/antigravity-skills.git"
 $CloneDir = Join-Path $env:TEMP "antigravity-skills-tmp"
-$TargetDir = Join-Path $HOME ".gemini\antigravity-cli\skills"
+$TargetDir = Join-Path $HOME ".gemini\skills"
 
 Write-Host "Fetching latest skills from $RepoUrl..."
 
