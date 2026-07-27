@@ -1,12 +1,12 @@
 ---
-name: review
+name: gku-review
 description: Review your own changes before you push or open a pull request — a severity-rated list of what to fix, checked against the repository's own conventions, a lint pass over the changed files, its tests, and the failure modes that green tests miss. Review-only; never edits, commits or pushes.
 model: pro
 argument-hint: "[branch] [--target <base>] [--deep] [--report]"
 user-invocable: true
 ---
 
-# /review — check your own work before anyone else sees it
+# /gku-review — check your own work before anyone else sees it
 
 Run this when you think you are done. It reads what you changed and tells you what a careful
 reviewer would say, so you fix it before a bot or a colleague finds it.
@@ -23,7 +23,7 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 ## Step 1 — Work out what changed
 
-Read `.gemini/repo-profile.json` (see `reference/repo-profile.md` alongside these skills — detect and
+Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` alongside these skills — detect and
 cache it if missing).
 
 ```bash

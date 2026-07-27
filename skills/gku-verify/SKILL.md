@@ -1,17 +1,17 @@
 ---
-name: verify
+name: gku-verify
 description: Check that a change actually works — run the project's tests, then drive the real thing (the command, the page, the function) and confirm the effect. Reports a clear verdict, and says honestly what could not be checked and why, instead of quietly skipping it.
 model: flash
 argument-hint: "[<pr-number> | <branch>] [--tests-only] [--report]"
 user-invocable: true
 ---
 
-# /verify — prove it works
+# /gku-verify — prove it works
 
 Tests passing and a feature working are different claims. This skill makes both, separately,
 and says which one it can actually support.
 
-Run it after `/implement`, before opening a pull request, or against someone's pull request
+Run it after `/gku-implement`, before opening a pull request, or against someone's pull request
 when you want more than a reading of the diff.
 
 Local only. It never touches a live system and never writes to the pull request.
@@ -26,7 +26,7 @@ Local only. It never touches a live system and never writes to the pull request.
 
 ## Step 1 — Preflight, and be honest about blockers
 
-Read `.gemini/repo-profile.json` (see `reference/repo-profile.md`).
+Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md`).
 
 Check, and report all of these together in one block rather than discovering them one at a
 time:

@@ -37,17 +37,17 @@ MIT licensed.
 ## What is this, exactly?
 
 A **skill** is a set of instructions you can call by name in Google Antigravity. Instead of
-explaining what a good code review looks like every time, you type `/review` and Antigravity
+explaining what a good code review looks like every time, you type `/gku-review` and Antigravity
 follows a procedure that was written once and refined.
 
-You call them with a slash, like `/review`, in the Google Antigravity chat.
+You call them with a slash, like `/gku-review`, in the Google Antigravity chat.
 
 They are **not** magic and they are **not** automatic. Every one of them does something you
 could do yourself; they just do it consistently and without forgetting the boring parts —
 which is exactly where mistakes come from.
 
-Four of them (`/plan`, `/review`, `/pr-review`, `/verify`) never change your code at all.
-Two of them do (`/implement`, `/pr-resolve`), and both tell you what they are about to do.
+Four of them (`/gku-plan`, `/gku-review`, `/gku-pr-review`, `/gku-verify`) never change your code at all.
+Two of them do (`/gku-implement`, `/gku-pr-resolve`), and both tell you what they are about to do.
 
 ## Before you start
 
@@ -72,8 +72,8 @@ You need:
    gh auth status
    ```
 
-   `/plan`, `/implement`, `/review` and `/verify` work without `gh`. Only `/pr-review` and
-   `/pr-resolve` need it, because they talk to GitHub.
+   `/gku-plan`, `/gku-implement`, `/gku-review` and `/gku-verify` work without `gh`. Only `/gku-pr-review` and
+   `/gku-pr-resolve` need it, because they talk to GitHub.
 
 4. **Docker** — [Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows
    and macOS, Docker Engine on Linux. **Strongly recommended on every platform**, not just
@@ -113,13 +113,16 @@ curl -fsSL https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/ma
 Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/main/install.ps1' | Invoke-Expression
 ```
 
-Type `/` in Google Antigravity and you will see `/plan`, `/implement`, `/review`, `/pr-review`, `/pr-resolve`, and `/verify` in the slash commands menu.
+Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `/gku-review`, `/gku-pr-review`, `/gku-pr-resolve`, and `/gku-verify` in the slash commands menu.
 
 > [!NOTE]
 > **Antigravity IDE and App:** The global installation above makes these skills available in the **Antigravity CLI (`agy`)**. The Antigravity IDE and Antigravity 2.0 (App) handle custom skills on a per-project basis. To use them there, copy the skills into your project's local `.agents/skills/` directory:
 > ```bash
 > mkdir -p .agents/skills
-> cp -R ~/.gemini/skills/* .agents/skills/
+> # remove any earlier unprefixed copies first, so a renamed skill does not
+> # linger beside its replacement and load twice
+> rm -rf .agents/skills/{review,plan,implement,pr-review,pr-resolve,verify,reference}
+> cp -R ~/.gemini/skills/gku-* .agents/skills/
 > ```
 
 ## The skills
@@ -127,26 +130,26 @@ Type `/` in Google Antigravity and you will see `/plan`, `/implement`, `/review`
 They follow the order of the work:
 
 ```
-   /plan  ──▶  /implement  ──▶  /review  ──▶  open a pull request
+   /gku-plan  ──▶  /gku-implement  ──▶  /gku-review  ──▶  open a pull request
                                                       │
                                     ┌─────────────────┴──────────────────┐
                                     ▼                                    ▼
-                              /pr-review                           /pr-resolve
+                              /gku-pr-review                           /gku-pr-resolve
                         (someone else's PR)                  (comments on yours)
                                     │                                    │
-                                    └─────────────▶ /verify ◀────────────┘
+                                    └─────────────▶ /gku-verify ◀────────────┘
 ```
 
 | Command | What it does | Changes your code? |
 |---|---|---|
-| `/plan` | Turns a request into a concrete plan, checked against the real code | No |
-| `/implement` | Builds the plan, step by step, ticking off progress as it goes | **Yes** |
-| `/review` | Checks your own changes before you push them | No |
-| `/pr-review` | Reviews someone else's pull request properly | No |
-| `/pr-resolve` | Works through the review comments on *your* pull request | **Yes** |
-| `/verify` | Runs the tests and drives the real thing to prove it works | No |
+| `/gku-plan` | Turns a request into a concrete plan, checked against the real code | No |
+| `/gku-implement` | Builds the plan, step by step, ticking off progress as it goes | **Yes** |
+| `/gku-review` | Checks your own changes before you push them | No |
+| `/gku-pr-review` | Reviews someone else's pull request properly | No |
+| `/gku-pr-resolve` | Works through the review comments on *your* pull request | **Yes** |
+| `/gku-verify` | Runs the tests and drives the real thing to prove it works | No |
 
-You do not have to use all of them, or use them in order. `/review` on its own, before every
+You do not have to use all of them, or use them in order. `/gku-review` on its own, before every
 push, is already worth it.
 
 ## A worked example, start to finish
@@ -157,13 +160,13 @@ same name.*
 **1. Work out what is actually wrong.**
 
 ```
-/plan the statistics export merges departments that have the same name
+/gku-plan the statistics export merges departments that have the same name
 ```
 
 > **On quotes:** you do not need them. What you type is passed to the skill as plain text —
 > there is no shell involved, so nothing needs escaping, and apostrophes are fine. Quotes are
 > only worth using when you add a flag after a description, to mark where the description ends:
-> `/implement "add a CSV export" --continue`.
+> `/gku-implement "add a CSV export" --continue`.
 
 Antigravity finds the export code, reads it, checks the database to see whether same-named
 departments really exist, and writes a plan to `.tasks/export-department-collision.md` — with
@@ -173,20 +176,20 @@ say so now** — it is much cheaper to fix a plan than a half-built change.
 **2. Build it.**
 
 ```
-/implement .tasks/export-department-collision.md
+/gku-implement .tasks/export-department-collision.md
 ```
 
 It creates a branch, works through the steps in order, ticks each one off in the task file,
 and runs the tests. You can watch every edit and stop at any time.
 
 > **If you run out of usage partway through, that is fine.** The finished steps are ticked in
-> the task file. When your limit resets, `/implement .tasks/export-department-collision.md
+> the task file. When your limit resets, `/gku-implement .tasks/export-department-collision.md
 > --continue` picks up exactly where it stopped.
 
 **3. Check your own work.**
 
 ```
-/review
+/gku-review
 ```
 
 You get a short list: blockers to fix first, warnings worth a look, and nits you can ignore.
@@ -197,7 +200,7 @@ Fix the blockers, then push and open a pull request as you normally would.
 An automated reviewer comments on the pull request. Instead of fixing each one by hand:
 
 ```
-/pr-resolve 42
+/gku-pr-resolve 42
 ```
 
 It checks **every comment against the actual code first**, then fixes the ones that are
@@ -207,7 +210,7 @@ genuinely ambiguous. One commit per fix, one reply per comment.
 **5. Prove it works.**
 
 ```
-/verify
+/gku-verify
 ```
 
 Runs the tests *and* actually runs the export, then gives a verdict — including an honest
@@ -215,12 +218,12 @@ list of anything it could not check.
 
 ## Each skill in detail
 
-### `/plan` — work out what to build
+### `/gku-plan` — work out what to build
 
 ```
-/plan students cannot download their individual plan
-/plan .tasks/new-grade-export.md
-/plan --review .tasks/proposed-approach.md
+/gku-plan students cannot download their individual plan
+/gku-plan .tasks/new-grade-export.md
+/gku-plan --review .tasks/proposed-approach.md
 ```
 
 Give it a sentence, or point it at a markdown file with a longer description. It works out
@@ -237,12 +240,12 @@ than inventing a different one.
 **It writes no code.** Use it when you are not yet sure what the right change is. For an
 obvious one-line fix, skip it.
 
-### `/implement` — build it
+### `/gku-implement` — build it
 
 ```
-/implement .tasks/export-department-collision.md
-/implement add a CSV option to the student export
-/implement .tasks/big-task.md --continue
+/gku-implement .tasks/export-department-collision.md
+/gku-implement add a CSV option to the student export
+/gku-implement .tasks/big-task.md --continue
 ```
 
 Works sequentially in your working tree — no background agents, nothing hidden. It creates a
@@ -255,12 +258,12 @@ what landed, which is what makes `--continue` work after an interruption.
 It stays inside the task. If it notices something else broken, it tells you at the end rather
 than quietly fixing it — an implementation that wanders is one nobody can review.
 
-### `/review` — check your own work
+### `/gku-review` — check your own work
 
 ```
-/review
-/review --deep
-/review --report
+/gku-review
+/gku-review --deep
+/gku-review --report
 ```
 
 **The one to use every day.** Run it before you push. It reads your changes, applies your
@@ -285,11 +288,11 @@ project that declares `>=7.4`.
 `--deep` allows one helper agent to double-check callers of code you renamed. It costs more;
 use it when you have touched shared code.
 
-### `/pr-review` — review someone else's pull request
+### `/gku-pr-review` — review someone else's pull request
 
 ```
-/pr-review 42
-/pr-review https://github.com/grinchenkoedu/local_gdo/pull/42
+/gku-pr-review 42
+/gku-pr-review https://github.com/grinchenkoedu/local_gdo/pull/42
 ```
 
 Checks out the pull request in a separate worktree — so your own work is untouched — and
@@ -308,13 +311,13 @@ decide what to say.
 > tuned to be precise about style, and it approves changes containing real bugs. This skill
 > treats its approval as no information at all.
 
-### `/pr-resolve` — act on comments on your pull request
+### `/gku-pr-resolve` — act on comments on your pull request
 
 ```
-/pr-resolve https://github.com/grinchenkoedu/local_gdo/pull/42
-/pr-resolve 42
-/pr-resolve 42 --dry-run
-/pr-resolve 42 --in ~/work        # where to put a working copy, if one must be made
+/gku-pr-resolve https://github.com/grinchenkoedu/local_gdo/pull/42
+/gku-pr-resolve 42
+/gku-pr-resolve 42 --dry-run
+/gku-pr-resolve 42 --in ~/work        # where to put a working copy, if one must be made
 ```
 
 For **your own** pull request. **A URL works from anywhere** — any directory, another project,
@@ -333,12 +336,12 @@ Reviewers — human and automated alike — are sometimes wrong. Fixing a confid
 positive is how you introduce a real bug. Start with `--dry-run` to see the verdicts before
 anything changes.
 
-### `/verify` — prove it works
+### `/gku-verify` — prove it works
 
 ```
-/verify
-/verify 42
-/verify --tests-only
+/gku-verify
+/gku-verify 42
+/gku-verify --tests-only
 ```
 
 Tests passing and a feature working are two different claims. This makes both separately.
@@ -377,11 +380,11 @@ Faculty administrators currently count this by hand every semester.
 - [ ] Same-named departments in different faculties stay separate
 ```
 
-Keep them in `.tasks/` — `/plan` writes there, `/implement` reads and updates them. Add
+Keep them in `.tasks/` — `/gku-plan` writes there, `/gku-implement` reads and updates them. Add
 `.tasks/` to `.gitignore` unless you want the briefs in version control.
 
 **Be specific about what "done" means.** That list becomes the acceptance criteria, which is
-what `/implement` builds against and what `/verify` checks. Vague criteria produce vague work.
+what `/gku-implement` builds against and what `/gku-verify` checks. Vague criteria produce vague work.
 
 ## Model Selection
 
@@ -393,17 +396,17 @@ How these skills keep costs and latency down:
 - **The stack is detected once**, then cached in `.gemini/repo-profile.json` and reused by every skill. Add that file to `.gitignore`.
 - **Reading is capped.** At most five files read in full; everything else judged from the diff.
 - **Answers go in the chat**, not into generated report files.
-- **`/implement` is resumable**, so if you stop the task it can be resumed.
+- **`/gku-implement` is resumable**, so if you stop the task it can be resumed.
 
 Practical advice:
 
-1. **For `/plan` and `/review`:** Use **Gemini Pro (e.g., Gemini 3.1 Pro)**. Planning and code reviews benefit heavily from the deep reasoning and large context windows of a Pro model.
-2. **For `/implement`:** Use a lighter model like **Gemini Flash (e.g., Gemini 3.1 Flash)**. Implementation is iterative and repetitive; the Flash models offer the speed you need to iterate quickly.
+1. **For `/gku-plan` and `/gku-review`:** Use **Gemini Pro (e.g., Gemini 3.1 Pro)**. Planning and code reviews benefit heavily from the deep reasoning and large context windows of a Pro model.
+2. **For `/gku-implement`:** Use a lighter model like **Gemini Flash (e.g., Gemini 3.1 Flash)**. Implementation is iterative and repetitive; the Flash models offer the speed you need to iterate quickly.
 3. **Model Autoselect:** Yes, Antigravity has model autoselect capabilities! While you can explicitly choose your models per conversation in the Antigravity UI, Antigravity also supports dynamic model selection for background tasks. If the agent invokes a subagent, it can default to 'inherit' (autoselect based on parent) or explicitly request 'flash_lite', 'flash', or 'pro' depending on the subagent's task complexity.
 2. **Use `/clear` between unrelated tasks.** A long conversation is re-sent with every
    message, so an unrelated three-hour history makes every request more expensive.
-3. **Run `/review` often and `--deep` rarely.** The plain version catches most of it.
-4. **Prefer `/implement` on a written task file** over a vague sentence — it gets it right the
+3. **Run `/gku-review` often and `--deep` rarely.** The plain version catches most of it.
+4. **Prefer `/gku-implement` on a written task file** over a vague sentence — it gets it right the
    first time more often, and a redo costs more than a good brief.
 5. **If you hit a limit mid-build, do not start over.** Wait for the reset and use
    `--continue`.
@@ -413,7 +416,7 @@ Practical advice:
 **The commands do not appear after installing.**
 Restart Google Antigravity. Check that the skills are in `~/.gemini/skills/`.
 
-**`/pr-review` says it cannot find the pull request.**
+**`/gku-pr-review` says it cannot find the pull request.**
 Check `gh auth status`. For a private repository you need access, and the token needs the
 `repo` scope. Re-authenticate with `gh auth login --scopes "repo,read:org"`.
 
@@ -422,11 +425,11 @@ It caches what it detected. Delete `.gemini/repo-profile.json` and run again, or
 `--reprofile`. If the project's real command lives somewhere unusual, put it in the
 repository's `AGENTS.md` — the skills read that file.
 
-**`/implement` refuses to start.**
+**`/gku-implement` refuses to start.**
 Usually uncommitted changes it did not make. Commit or stash them first — it will not build on
 top of work it cannot account for.
 
-**`/verify` says "cannot tell".**
+**`/gku-verify` says "cannot tell".**
 That is deliberate, not a failure. Read the blocked checks and their categories; each has a
 one-line way to unblock it. A `HOSTED` blocker means the code needs its host application
 (a Moodle plugin cannot run on its own) — that one is a fact about the project, not a problem
