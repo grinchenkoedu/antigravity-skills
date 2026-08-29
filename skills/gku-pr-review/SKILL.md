@@ -140,7 +140,7 @@ Under ~25 lines for a clean PR, ~40 with findings.
 Write a report file only when there is at least one blocker, or four or more findings, or
 `--report` was passed. It goes to `.gku/reports/pr-review-pr-<n>-<timestamp>.md` in the
 **primary** repository — not the worktree, and not any repository root — per
-`gku-reference/reports.md` in this plugin. Print its absolute path.
+`gku-reference/reports.md` alongside these skills. Print its absolute path.
 
 ## Step 7 — Offer to clean up
 

@@ -50,7 +50,7 @@ never fall through to treating it as a sentence and fixing something invented.
 
 ## Step 1 — Set up, and note the state of the tree
 
-Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` in this plugin — detect and
+Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` alongside these skills — detect and
 cache it if missing). You need its lint, test and scoped-test commands.
 
 **Everything that touches the project's toolchain runs through the profile's `exec.prefix`** —

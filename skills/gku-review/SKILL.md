@@ -24,7 +24,7 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 ## Step 1 — Work out what changed
 
-Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` in this plugin — detect and
+Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` alongside these skills — detect and
 cache it if missing).
 
 ```bash
@@ -90,7 +90,7 @@ nit somebody waves away. The high bar is on the *label*, not on whether you spea
 
 ## Step 3b — Security pass
 
-Read the changed code against `gku-reference/security-checklist.md` in this plugin. It is the list
+Read the changed code against `gku-reference/security-checklist.md` alongside these skills. It is the list
 of well-known flaws — injection into SQL, shell, filesystem and templates; output that skips
 escaping; entry points with no login or permission check; records fetched by id with no
 ownership check; mass assignment; state changes with no CSRF token; committed secrets; uploads
@@ -205,7 +205,7 @@ Keep it under ~25 lines when clean, ~40 with findings. It is a message to a coll
 
 Write a report file **only** with `--report`, or when there is at least one blocker. It goes to
 `.gku/reports/review-<branch-slug>-<timestamp>.md` — never the repository root — per
-`gku-reference/reports.md` in this plugin, which also covers creating the directory and making sure
+`gku-reference/reports.md` alongside these skills, which also covers creating the directory and making sure
 it is ignored. Print its absolute path.
 
 ## Rules
