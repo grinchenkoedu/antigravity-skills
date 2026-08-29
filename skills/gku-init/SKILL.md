@@ -26,7 +26,7 @@ Run it once per repository, and again whenever the family rules improve.
 Two parts, and the distinction is the whole point:
 
 ```markdown
-# <Project> — notes for Claude
+# <Project> — notes for Antigravity
 
 ...your own sections: what this project is, its quirks,
    anything you want said every session...
@@ -110,7 +110,7 @@ installed). Extract everything between the `<!-- toolkit:begin family-rules -->`
 words, which also appear in the template's own prose. Then assemble:
 
 ```markdown
-# <Repository name> — notes for Claude
+# <Repository name> — notes for Antigravity
 
 <One or two sentences: what this project is, and anything structural a newcomer would get wrong.
 For a Moodle plugin, that the repo root is the plugin root and it cannot run standalone.>
