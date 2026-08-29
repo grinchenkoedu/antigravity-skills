@@ -28,6 +28,7 @@ MIT licensed.
 - [A worked example](#a-worked-example-start-to-finish)
 - [Each skill in detail](#each-skill-in-detail)
 - [Writing a task file](#writing-a-task-file)
+- [Where the reports go](#where-the-reports-go)
 - [Model Selection](#model-selection)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -47,7 +48,9 @@ could do yourself; they just do it consistently and without forgetting the borin
 which is exactly where mistakes come from.
 
 Four of them (`/gku-plan`, `/gku-review`, `/gku-pr-review`, `/gku-verify`) never change your code at all.
-Two of them do (`/gku-implement`, `/gku-pr-resolve`), and both tell you what they are about to do.
+Three do (`/gku-implement`, `/gku-fix`, `/gku-pr-resolve`), and each tells you what it is about to
+do. `/gku-pr` changes nothing locally; it pushes commits you already made and opens the pull
+request.
 
 ## Before you start
 
@@ -57,7 +60,7 @@ You need:
 2. **git** — you have this already if you are cloning repositories.
    **On Windows, install [Git for Windows](https://git-scm.com/download/win)**, which includes
    Git Bash. Google Antigravity uses it to run commands, and these skills assume it is there.
-3. **The GitHub CLI (`gh`)**, for the two pull-request skills:
+3. **The GitHub CLI (`gh`)**, for the three pull-request skills:
 
    ```bash
    winget install --id GitHub.cli     # Windows
@@ -72,8 +75,8 @@ You need:
    gh auth status
    ```
 
-   `/gku-plan`, `/gku-implement`, `/gku-review` and `/gku-verify` work without `gh`. Only `/gku-pr-review` and
-   `/gku-pr-resolve` need it, because they talk to GitHub.
+   `/gku-plan`, `/gku-implement`, `/gku-review`, `/gku-fix` and `/gku-verify` work without `gh`.
+   Only `/gku-pr`, `/gku-pr-review` and `/gku-pr-resolve` need it, because they talk to GitHub.
 
 4. **Docker** — [Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows
    and macOS, Docker Engine on Linux. **Strongly recommended on every platform**, not just
@@ -113,7 +116,7 @@ curl -fsSL https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/ma
 Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/main/install.ps1' | Invoke-Expression
 ```
 
-Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `/gku-review`, `/gku-pr-review`, `/gku-pr-resolve`, and `/gku-verify` in the slash commands menu.
+Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `/gku-review`, `/gku-fix`, `/gku-init`, `/gku-pr`, `/gku-pr-review`, `/gku-pr-resolve`, and `/gku-verify` in the slash commands menu.
 
 > [!NOTE]
 > **Antigravity IDE and App:** The global installation above makes these skills available in the **Antigravity CLI (`agy`)**. The Antigravity IDE and Antigravity 2.0 (App) handle custom skills on a per-project basis. To use them there, copy the skills into your project's local `.agents/skills/` directory:
@@ -121,7 +124,7 @@ Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `
 > mkdir -p .agents/skills
 > # remove any earlier unprefixed copies first, so a renamed skill does not
 > # linger beside its replacement and load twice
-> rm -rf .agents/skills/{review,plan,implement,pr-review,pr-resolve,verify,reference}
+> rm -rf .agents/skills/{fix,implement,init,plan,pr,pr-resolve,pr-review,review,verify,reference}
 > cp -R ~/.gemini/skills/gku-* .agents/skills/
 > ```
 
@@ -130,21 +133,24 @@ Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `
 They follow the order of the work:
 
 ```
-   /gku-plan  ──▶  /gku-implement  ──▶  /gku-review  ──▶  open a pull request
-                                                      │
-                                    ┌─────────────────┴──────────────────┐
-                                    ▼                                    ▼
-                              /gku-pr-review                           /gku-pr-resolve
-                        (someone else's PR)                  (comments on yours)
-                                    │                                    │
-                                    └─────────────▶ /gku-verify ◀────────────┘
+   /gku-init ──▶ /gku-plan ──▶ /gku-implement ──▶ /gku-review ⇄ /gku-fix ──▶ /gku-pr
+(once per repo)                                                                 │
+                                       ┌────────────────────────────────────────┤
+                                       ▼                                        ▼
+                                /gku-pr-review                          /gku-pr-resolve
+                            (someone else's PR)                      (comments on yours)
+                                       │                                        │
+                                       └───────────────▶ /gku-verify ◀──────────┘
 ```
 
 | Command | What it does | Changes your code? |
 |---|---|---|
+| `/gku-init` | Writes this repository's `GEMINI.md` — commands plus its family's rules | **Yes** (one file) |
 | `/gku-plan` | Turns a request into a concrete plan, checked against the real code | No |
 | `/gku-implement` | Builds the plan, step by step, ticking off progress as it goes | **Yes** |
 | `/gku-review` | Checks your own changes before you push them | No |
+| `/gku-fix` | Investigates a symptom, or applies review findings — one commit each | **Yes** |
+| `/gku-pr` | Opens the pull request for this branch, or updates the existing one | No (pushes commits you made) |
 | `/gku-pr-review` | Reviews someone else's pull request properly | No |
 | `/gku-pr-resolve` | Works through the review comments on *your* pull request | **Yes** |
 | `/gku-verify` | Runs the tests and drives the real thing to prove it works | No |
@@ -192,10 +198,35 @@ and runs the tests. You can watch every edit and stop at any time.
 /gku-review
 ```
 
-You get a short list: blockers to fix first, warnings worth a look, and nits you can ignore.
-Fix the blockers, then push and open a pull request as you normally would.
+You get a short list: blockers to fix first, warnings worth a look, and nits you can ignore. It
+ends by naming what to run next, so you are not left holding a list.
 
-**4. Deal with the review comments.**
+**4. Apply the fixes.**
+
+```
+/gku-fix
+```
+
+It picks up the findings from the review you just ran, **re-checks each one against the code**
+before touching it — some will already be fixed, and some will turn out to be wrong — then
+applies the blockers and warnings, one commit each, and re-runs the tests. Nits are listed, not
+applied, unless you add `--nits`.
+
+> The same command also starts from cold. `/gku-fix the export merges same-named departments`
+> in a brand-new session investigates the report first — finds the code, reproduces it, proves
+> the cause — and then fixes it, rather than handing you a plan to run.
+
+**5. Open the pull request.**
+
+```
+/gku-pr
+```
+
+It reads the whole branch, checks that it **reads as one pull request** — and asks first if it
+looks like a feature with an unrelated fix riding along — then pushes and writes a description
+from the actual diff, using your repository's template if it has one.
+
+**6. Deal with the review comments.**
 
 An automated reviewer comments on the pull request. Instead of fixing each one by hand:
 
@@ -207,7 +238,7 @@ It checks **every comment against the actual code first**, then fixes the ones t
 right, pushes back with evidence on the ones that are wrong, and asks you about anything
 genuinely ambiguous. One commit per fix, one reply per comment.
 
-**5. Prove it works.**
+**7. Prove it works.**
 
 ```
 /gku-verify
@@ -217,6 +248,41 @@ Runs the tests *and* actually runs the export, then gives a verdict — includin
 list of anything it could not check.
 
 ## Each skill in detail
+
+### `/gku-init` — give this repository a GEMINI.md
+
+```
+/gku-init
+/gku-init --refresh
+/gku-init --dry-run
+```
+
+`GEMINI.md` is read at the start of every session in a repository, so it is where the build and
+test commands and the handful of rules that actually get broken here belong. `/gku-init` detects the
+project family — Moodle plugin, PHP app, CMS, Python — fills in the real commands, and adds that
+family's conventions, security rules, design priorities (readable before maintainable before
+extendable before efficient) and where long-running work belongs.
+
+The shared part sits inside markers:
+
+```markdown
+<!-- toolkit:begin family-rules -->
+...maintained by /gku-init...
+<!-- toolkit:end family-rules -->
+```
+
+`--refresh` replaces **only** that block, so anything you wrote yourself survives.
+
+If a `GEMINI.md` already exists it is **read and judged first**: correct commands and a current
+family block get reported as *already fine* with nothing written, because churning a good file
+is not an improvement. A stale command or a rule the code contradicts is listed for you rather
+than silently rewritten. A file without markers is never overwritten — it asks.
+
+It also leaves an `AGENTS.md` stub pointing at `GEMINI.md`, so other agents find the same rules
+without a second copy that drifts. A stub rather than a symlink, because git checks symlinks out
+as plain text files on Windows.
+
+Run it once per repository, and again when the family rules improve.
 
 ### `/gku-plan` — work out what to build
 
@@ -232,13 +298,15 @@ different answers — then reads the code and checks its assumptions against rea
 proposing anything.
 
 Output goes to `.tasks/<name>.md`: the cause or design, acceptance criteria, ordered steps,
-and how to check the result.
+and how to check the result. For a web application the design also says which steps run in the
+background rather than in the request, using the mechanism the project already has.
 
 `--review` is for when the file *already* proposes a solution: it judges that proposal rather
 than inventing a different one.
 
-**It writes no code.** Use it when you are not yet sure what the right change is. For an
-obvious one-line fix, skip it.
+**It writes no code.** Use it when you are not yet sure what the right change is, or when the
+answer needs agreeing before anyone builds it. For something that is simply broken and wants
+fixing, `/gku-fix` does the same investigation and then acts on it.
 
 ### `/gku-implement` — build it
 
@@ -267,7 +335,7 @@ than quietly fixing it — an implementation that wanders is one nobody can revi
 ```
 
 **The one to use every day.** Run it before you push. It reads your changes, applies your
-repository's own conventions (from `AGENTS.md`, `AGENTS.md` or whatever the project has), and
+repository's own conventions (from `AGENTS.md`, `GEMINI.md` or whatever the project has), and
 gives you a list sorted by severity:
 
 - **BLOCKER** — do not push this. Committed passwords, lost data, a renamed function still
@@ -279,6 +347,17 @@ gives you a list sorted by severity:
 It also checks whether your **tests actually prove anything** — a test with no real assertion,
 or one that mocks away the exact thing you changed, passes while proving nothing.
 
+Every review includes a **security pass** against the well-known flaws — a request value
+reaching SQL, a shell, the filesystem or the page unescaped; an entry point with no login or
+permission check; a record anyone can read by changing an id; a form bound straight to a model;
+a state change with no CSRF token; a committed secret; an upload stored where the server would
+run it; the server fetching a URL the user chose; weak tokens and hashing; a dependency with a
+published advisory. The list, with the code pattern and the proof for each, lives in
+`gku-reference/security-checklist.md`. A finding names the line and the one input that
+shows it — a single quote, `../`, a `<b>` tag — and nothing more than that is ever built. The
+closing line of the review names which parts of the pass were done, so a skipped part is
+visible rather than silent.
+
 If the project has a lint command, it **lints the files you changed** and reports a parse error
 as a blocker. In a repository with no tests and no working CI, this is the only mechanical check
 standing between a syntax error and a live site. It will tell you when the linter runs a newer
@@ -287,6 +366,97 @@ project that declares `>=7.4`.
 
 `--deep` allows one helper agent to double-check callers of code you renamed. It costs more;
 use it when you have touched shared code.
+
+It ends by naming the next command — `/gku-fix` when there is something to fix, `/gku-pr` when
+there is not. It never applies anything itself.
+
+### `/gku-fix` — find what is wrong, then fix it
+
+```
+/gku-fix
+/gku-fix .gku/reports/review-my-branch-20260824-143201.md
+/gku-fix the export blows up when a department has no head
+/gku-fix --nits
+/gku-fix --dry-run
+```
+
+Two jobs in one command, because in practice they are the same job.
+
+**Given findings**, it applies them — **blockers and warnings by default**, one commit each,
+then re-runs the tests. Nits are listed rather than applied; they are matters of taste and they
+bury the real changes in a diff somebody has to read. `--nits` takes them too. This is the half
+`/gku-review` deliberately leaves undone.
+
+**Given a symptom** — a sentence describing something broken — **it investigates first**, the
+way `/gku-plan` does: work out whether you are describing a bug, a feature, a question or a data
+problem; find the code; reproduce it; prove the cause. Only then does it edit anything.
+
+The difference from `/gku-plan` is what happens next: **when the cause is proven and the fix is
+clear, it acts.** No plan file, no approval step for your own bug report. It tells you what it
+found in two or three lines and fixes it. It asks only when the answer would change the fix —
+two defensible options, a cause outside this branch, or something that turns out to be a feature
+rather than a fix. *A question it could answer by reading more code is not a question.*
+
+That is what makes it a reasonable way to **open a fresh session on a bug report**. Nothing
+needs to be in the conversation already:
+
+- **with nothing** — findings from a `/gku-review` earlier in the conversation, or that review
+  run inline if there are none;
+- **with a file** — a report from `.gku/reports/`, or any markdown holding findings;
+- **with a sentence** — investigate it, then fix it.
+
+It is explicit about the difference between a **proven cause** and a **hypothesis**, and it says
+which one it acted on. When it reproduced the symptom, it re-runs that same reproduction after
+the fix — a green test suite does not prove your bug is gone; the thing that used to fail no
+longer failing does.
+
+**It re-checks every finding against the code before editing anything**, including findings it
+produced itself a minute ago. Findings go stale: the file moved, somebody already fixed it, or
+the claim was wrong to begin with. Each one comes back *fixed*, *already resolved*, *does not
+hold* with the evidence, or *needs your decision* — and the ones that do not hold cost you
+nothing but a line in the report.
+
+`--dry-run` stops after the diagnosis, which is `/gku-fix` behaving like `/gku-plan` when that
+is what you want from it.
+
+It applies **the smallest change that resolves each finding**, with no drive-by refactoring, and
+it never pushes. When a "fix" turns out to need a redesign, it stops on that finding and says so
+rather than quietly building something larger.
+
+> It will not re-run the review afterwards, on purpose. Review → fix → review → fix is a loop
+> that spends a lot of usage for very little. It names the next command; you choose it.
+
+### `/gku-pr` — open the pull request
+
+```
+/gku-pr
+/gku-pr "Keep same-named departments separate in the statistics export"
+/gku-pr --draft
+/gku-pr --dry-run
+```
+
+Opens the pull request for the current branch, or updates the one already linked to it. It
+pushes commits you have already made; it never commits for you, never merges, and never
+force-pushes.
+
+**The part worth having: it checks the branch reads as one pull request.** A branch carrying a
+feature *and* an unrelated bug fix *and* a formatting sweep is three reviews pretending to be
+one, and that is where review quality quietly disappears. When it finds that, it stops, shows
+you the groups it found — the sentence describing each, its commits, its files — and asks:
+
+- **open one pull request anyway**, which is often the right answer for a small passenger; or
+- **stop, so you can split it**, with the commits that would go in each named for you.
+
+It will not split the branch itself. Rewriting your history is not its decision to make.
+
+Many files with one purpose, or an implementation with its tests and its migration, are **one**
+change — it does not flag those.
+
+The description comes from the actual diff and your repository's own
+`.github/pull_request_template.md` if it has one, with the title matching the house style it
+reads from your recent merged pull requests. The testing section says what was actually run and
+**admits it when nothing was**. Updating an existing pull request never silently overwrites a
+description somebody wrote by hand.
 
 ### `/gku-pr-review` — review someone else's pull request
 
@@ -317,7 +487,6 @@ decide what to say.
 /gku-pr-resolve https://github.com/grinchenkoedu/local_gdo/pull/42
 /gku-pr-resolve 42
 /gku-pr-resolve 42 --dry-run
-/gku-pr-resolve 42 --in ~/work        # where to put a working copy, if one must be made
 ```
 
 For **your own** pull request. **A URL works from anywhere** — any directory, another project,
@@ -348,6 +517,12 @@ Tests passing and a feature working are two different claims. This makes both se
 
 It runs the project's test suite (quoting the actual result line, not "tests pass"), then
 **runs the real thing** — the command, the page, the function — and checks the effect.
+
+Then it **confirms the guards hold**: the same entry point requested with no session, as a test
+account without the permission, with the CSRF token removed, with another account's record id,
+with `../` in a filename, with `<b>` in a text field. Each is one minimal local probe on
+throwaway accounts, each gets its own row — passed, failed, or skipped with a reason — and a
+refusal is the result being looked for. Everything created for it is removed afterwards.
 
 Its most useful feature is honesty about what it could not check. Every skipped check gets a
 category and a way to unblock it, and **"cannot tell" is a valid verdict**. A confident
@@ -386,6 +561,28 @@ Keep them in `.tasks/` — `/gku-plan` writes there, `/gku-implement` reads and 
 **Be specific about what "done" means.** That list becomes the acceptance criteria, which is
 what `/gku-implement` builds against and what `/gku-verify` checks. Vague criteria produce vague work.
 
+## Where the reports go
+
+Most answers stay in the chat. When a skill does write a file — `/gku-review`, `/gku-verify` and
+`/gku-pr-review`, on `--report` or when they find a blocker — it goes into one ignored directory,
+never the repository root:
+
+```
+.gku/reports/review-security-pass-20260824-143201.md
+.gku/reports/review-security-pass-20260824-171045.md
+.gku/reports/verify-security-pass-20260824-172230.md
+.gku/reports/pr-review-pr-118-20260824-093700.md
+```
+
+The name is `<kind>-<branch-or-pr>-<UTC timestamp>.md`. The prefix says which skill wrote it,
+the timestamp keeps a second run on the same branch from overwriting the first, and sorting the
+directory sorts it by kind, then branch, then time. Nothing is ever overwritten, so a series of
+reviews collects there for comparison.
+
+The skills add `.gku/` to your `.gitignore` the first time they write one — these are working
+notes about a moment in your working tree, not project history. Delete the directory whenever
+you like; nothing reads it except you and `/gku-fix <path>`.
+
 ## Model Selection
 
 Google Antigravity provides a model selection UI for the primary agent and allows dynamically selecting models for subagents (like `Model: 'flash'` or `Model: 'pro'`).
@@ -414,7 +611,7 @@ Practical advice:
 ## Troubleshooting
 
 **The commands do not appear after installing.**
-Restart Google Antigravity. Check that the skills are in `~/.gemini/skills/`.
+Restart Google Antigravity. Check with `/plugin` that `gku@grinchenkoedu` is listed.
 
 **`/gku-pr-review` says it cannot find the pull request.**
 Check `gh auth status`. For a private repository you need access, and the token needs the
@@ -428,6 +625,28 @@ repository's `AGENTS.md` — the skills read that file.
 **`/gku-implement` refuses to start.**
 Usually uncommitted changes it did not make. Commit or stash them first — it will not build on
 top of work it cannot account for.
+
+**`/gku-pr` says my branch looks like more than one pull request.**
+It found groups of commits with no thread between them. Read the groups it printed: if the extra
+part is small and related enough, tell it to open one pull request anyway — that is a normal
+answer, not a workaround. If they really are separate, it names which commits belong where, but
+you split the branch yourself; it will not rewrite your history.
+
+**`/gku-fix` changed nothing and said the findings do not hold.**
+Working as intended. It re-checks each finding against the code first, and a review — including
+its own — is sometimes wrong about your codebase. Read the evidence it gave per finding; if you
+disagree with the re-check, say so and it will fix it.
+
+**`/gku-fix` called its cause a "hypothesis".**
+It could not reproduce the symptom, so it is telling you the difference between what it proved
+and what it inferred from reading the code. Weigh the fix accordingly. Giving it the input that
+reproduces the problem — the record id, the command, the request — turns the hypothesis into a
+proven cause on the next run.
+
+**`/gku-fix` investigated and then asked me a question instead of fixing.**
+It only does that when the answer changes the fix: two defensible options, a cause in code this
+branch never touched, or something that turns out to be a feature rather than a bug. Answer it
+and it carries on. If you want the diagnosis without any edits, use `--dry-run`.
 
 **`/gku-verify` says "cannot tell".**
 That is deliberate, not a failure. Read the blocked checks and their categories; each has a
@@ -463,7 +682,7 @@ once you are done. List them with `git worktree list`.
 
 ## Contributing
 
-Add a skill as `plugins/toolkit/skills/<name>/SKILL.md`, with `name` and `description` in the
+Add a skill as `skills/<name>/SKILL.md`, with `name` and `description` in the
 frontmatter.
 
 Keep to the conventions the existing skills follow, because they are what make these usable on
@@ -472,12 +691,21 @@ a limited plan:
 - no sub-agents by default, at most one behind `--deep`;
 - no background workflows or agent fleets;
 - read the diff, not the repository, with an explicit cap;
-- answer in the chat; write a file only on a blocker or on request;
+- answer in the chat; write a file only on a blocker or on request, and write it to
+  `.gku/reports/` under the shared naming scheme, never to the repository root;
 - no absolute paths from your own machine in `SKILL.md`;
-- nothing specific to one repository — read the project's own conventions instead.
+- nothing specific to one repository — read the project's own conventions instead;
+- a rule about the *code the skills write* (a design priority, where long work runs) goes in the
+  family templates under `gku-templates/`, so it reaches a project through its `GEMINI.md`;
+  a rule about the *skills' own cost* goes in `gku-reference/`.
 
-The shared detection logic lives in `plugins/toolkit/reference/repo-profile.md`. If your skill
+The shared detection logic lives in `gku-reference/repo-profile.md`. If your skill
 needs to know something about the project, add it there rather than detecting it separately.
+The security checklist that `/gku-review` and `/gku-verify` share lives in
+`gku-reference/security-checklist.md` — add a flaw there once, with its pattern, proof
+and severity, rather than in each skill. Where report files go and how they are named is in
+`gku-reference/reports.md`; a skill that writes one follows it rather than inventing
+its own file name.
 
 ## Licence
 

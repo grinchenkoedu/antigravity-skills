@@ -1,7 +1,7 @@
 ---
 name: gku-pr-review
-description: Deep review of someone else's pull request in an isolated worktree — hunts the failures that automated review misses (broken error paths, infinite loops, races, blast radius, claim-vs-code drift), deduplicates against the bot's comments, and gives a short verdict in chat. Read-only; never edits, pushes or posts.
 model: pro
+description: Deep review of someone else's pull request in an isolated worktree — hunts the failures that automated review misses (broken error paths, infinite loops, races, blast radius, claim-vs-code drift), deduplicates against the bot's comments, and gives a short verdict in chat. Read-only; never edits, pushes or posts.
 argument-hint: "<pr-number-or-url> [--repo <owner/name>] [--deep] [--report]"
 user-invocable: true
 ---
@@ -43,7 +43,8 @@ real defect: report the wrong value it produces, not the style rule it breaks.
   passed, tests deleted or skipped, coverage that exercises the old path.
 - **Design smell** — logic at the wrong level (business rules in a page script), copy-paste
   divergence from an existing pattern, dead code left wired up, an abstraction that will force
-  the next change to touch five files.
+  the next change to touch five files, long-running work on the request path when the project
+  already has a background mechanism.
 
 ## Step 1 — Fetch it
 
@@ -136,8 +137,10 @@ it keeps the review fair. Close with one line on what the earlier layers already
 
 Under ~25 lines for a clean PR, ~40 with findings.
 
-Write `PR_REVIEW_<n>.md` in the **primary** repository only when there is at least one
-blocker, or four or more findings, or `--report` was passed. Print its absolute path.
+Write a report file only when there is at least one blocker, or four or more findings, or
+`--report` was passed. It goes to `.gku/reports/pr-review-pr-<n>-<timestamp>.md` in the
+**primary** repository — not the worktree, and not any repository root — per
+`gku-reference/reports.md` alongside these skills. Print its absolute path.
 
 ## Step 7 — Offer to clean up
 
