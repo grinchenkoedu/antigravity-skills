@@ -56,7 +56,7 @@ Stop as soon as the family is clear. This should be a handful of file checks, no
    commands stored here.
 1. **Base branch** — `git symbolic-ref refs/remotes/origin/HEAD` (strip `refs/remotes/origin/`).
    Falls back to whichever of `master` / `main` exists. Do not assume.
-2. **Standards doc** — first of `AGENTS.md`, `CONTRIBUTING.md`, `README.md` that
+2. **Standards doc** — first of `AGENTS.md`, `GEMINI.md`, `CONTRIBUTING.md`, `README.md` that
    exists. Skills read *this* file for conventions; there is no hardcoded rules file.
 3. **Family**, by marker file:
 

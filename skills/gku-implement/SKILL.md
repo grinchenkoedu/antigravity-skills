@@ -1,7 +1,7 @@
 ---
 name: gku-implement
-description: Build a task step by step in the current session — from a plan file, a markdown brief, or a sentence. Works through ordered steps, ticking each one off in the task file as it lands, so an interrupted run resumes exactly where it stopped instead of starting over.
 model: flash
+description: Build a task step by step in the current session — from a plan file, a markdown brief, or a sentence. Works through ordered steps, ticking each one off in the task file as it lands, so an interrupted run resumes exactly where it stopped instead of starting over.
 argument-hint: "<path/to/task.md> | <what to build> [--continue] [--step <n>]"
 user-invocable: true
 ---
@@ -69,17 +69,44 @@ If it is a sentence or a loose brief, work out the plan now, inline: find the re
 decide the approach, write down the criteria and the ordered steps. Keep it short — this is
 the planning `/gku-plan` would have done, at the scale the task deserves. For anything substantial
 or unfamiliar, stop and suggest running `/gku-plan` first; a real plan is worth the separate pass.
+For an `http` or `hosted` runtime, decide where any long-running piece runs — the request, or the
+background mechanism the code already has — before building it; it is the question `/gku-plan`
+step 4 asks, and it is far cheaper to answer here than to move the work afterwards.
 
 Write the plan into the task file so `--continue` has something to resume from.
 
+**Decide the test order now.** Tests come first — before the code they cover — when any of these
+holds:
+
+- the developer asked for TDD, or for a failing test first;
+- the task file or the brief says so;
+- the repository requires it — the profile's `standardsDoc` (`GEMINI.md` and friends), a
+  `CONTRIBUTING.md`, or a visible convention such as every feature landing with its test in the
+  same commit.
+
+Otherwise the default order below stands: build, then cover. Say in one line which order you are
+using and why, and write it into the task file above the steps so `--continue` finds it:
+
+```markdown
+Test order: test-first — required by GEMINI.md
+```
+
 ## Step 3 — Build, step by step
+
+**When the order is test-first**, each step starts with its test: write the test for what the
+step must do and run it — it has to fail, and fail for the right reason. A test that passes
+against code you have not written yet is testing nothing; find out why before continuing. Then
+make it pass with the smallest change that does. The step is not done until its test is green,
+and step 4 is left only filling the gaps the steps did not reach.
 
 For each step, in order:
 
 1. **Read** the files it touches, and enough around them to not break something.
 2. **Make the change**, following the conventions in the profile's `standardsDoc`. Match the
    file you are editing — its naming, its structure, its comment style. Consistency with the
-   neighbours beats consistency with a style guide.
+   neighbours beats consistency with a style guide. When the doc and the neighbours are both
+   silent on a design choice, prefer the readable option, then the maintainable, then the
+   extendable, then the efficient — the order spelled out in the family rules `/gku-init` writes.
 3. **Check it immediately** — lint the changed files if the profile has a lint command; run the
    scoped test if one covers this. Finding a mistake now is far cheaper than finding it after
    four more steps.
@@ -99,7 +126,11 @@ change becomes an unreviewable one.
 
 ## Step 4 — Write the tests
 
-Once the steps are done, cover what you built:
+If you worked test-first, most of this already exists — walk the list below against what the
+steps produced and add what is missing, particularly the error paths and edges that a
+step-by-step build tends to skip.
+
+Otherwise, now that the steps are done, cover what you built:
 
 - The main path, asserted properly — not just that it runs.
 - **The error paths**, which are the ones that get skipped: bad input, missing record, failed
@@ -146,14 +177,15 @@ Then, in chat:
 - the acceptance criteria, ticked or explicitly not met;
 - files changed, tests added, the quoted test result;
 - anything you noticed but deliberately left alone;
-- the next command: `/gku-review` before pushing.
+- the next command: `/gku-review` before pushing — then `/gku-fix` for what it finds, and
+  `/gku-pr` to open the pull request.
 
 Do not report success when tests are failing or a criterion is unmet. Say exactly what stands.
 
 ## Rules
 
 - **Local only.** Never push, never open a pull request, never touch a live system. Pushing is
-  a decision a person makes, after `/gku-review`.
+  a decision a person makes, after `/gku-review` — and `/gku-pr` is where it happens.
 - **Sequential. No agent fleets, no background workflows.** One working tree, in order.
 - **The task file is the progress log.** Update it as each step lands, so an interrupted run
   resumes instead of restarting.
