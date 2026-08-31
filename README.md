@@ -102,7 +102,7 @@ store commands that work there. WSL also works and behaves like Linux.
 
 ## Installation and Updating
 
-You can install or update the skills automatically. The script will fetch the latest version from this repository and install it into your global Antigravity skills directory (`~/.gemini/skills/`).
+You can install or update the skills automatically. The script will fetch the latest version from this repository, install it into your global Antigravity skills directory (`~/.gemini/skills/`), and configure links for the CLI and desktop/IDE config directories (`~/.gemini/antigravity-cli/skills/`, `~/.gemini/config/skills/`).
 
 **macOS, Linux, or Git Bash on Windows:**
 
@@ -116,10 +116,12 @@ curl -fsSL https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/ma
 Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/grinchenkoedu/antigravity-skills/main/install.ps1' | Invoke-Expression
 ```
 
-Type `/` in Google Antigravity and you will see `/gku-plan`, `/gku-implement`, `/gku-review`, `/gku-fix`, `/gku-init`, `/gku-pr`, `/gku-pr-review`, `/gku-pr-resolve`, and `/gku-verify` in the slash commands menu.
+Type `/` in Google Antigravity to see the skills in the slash commands menu: `/gku-init`, `/gku-plan`, `/gku-implement`, `/gku-fix`, `/gku-review`, `/gku-pr`, `/gku-pr-review`, `/gku-pr-resolve`, and `/gku-verify`.
 
 > [!NOTE]
-> **Antigravity IDE and App:** The global installation above makes these skills available in the **Antigravity CLI (`agy`)**. The Antigravity IDE and Antigravity 2.0 (App) handle custom skills on a per-project basis. To use them there, copy the skills into your project's local `.agents/skills/` directory:
+> **Active Across All Antigravity Agents:** The installation sets up the skills globally for the **Antigravity CLI (`agy`)**, **Desktop Antigravity apps / IDE**, and the **JetBrains Antigravity agent (ACP)**. All skills are active and available across all Antigravity agents even when they are not visible in the slash autocomplete menu — you can always invoke them directly (e.g. `/gku-plan`, `/gku-review`) or ask the agent to use them.
+>
+> To make skills available on a per-project basis (or bundle them directly in a repository), copy them into your project's local `.agents/skills/` directory:
 > ```bash
 > mkdir -p .agents/skills
 > # remove any earlier unprefixed copies first, so a renamed skill does not
@@ -138,9 +140,9 @@ They follow the order of the work:
                                        ┌────────────────────────────────────────┤
                                        ▼                                        ▼
                                 /gku-pr-review                          /gku-pr-resolve
-                            (someone else's PR)                      (comments on yours)
+                            (someone else's PR)                       (comments on yours)
                                        │                                        │
-                                       └───────────────▶ /gku-verify ◀──────────┘
+                                       └─────────────▶ /gku-verify ◀────────────┘
 ```
 
 | Command | What it does | Changes your code? |
@@ -495,9 +497,9 @@ clone if you have one, or makes one and tells you where. A bare number only work
 of the repository that owns the PR, since there is nothing else to resolve it against. It collects every comment, and — this is the important part —
 **gives each one a verdict before changing any code**:
 
-- **agree** → the smallest fix that resolves it, as its own commit;
-- **disagree** → no code change, and a polite reply with the file and line that answers it;
-- **unclear** → it asks you, batching all such questions into one interruption.
+- **agree** — the smallest fix that resolves it, as its own commit;
+- **disagree** — no code change, and a polite reply with the file and line that answers it;
+- **unclear** — it asks you, batching all such questions into one interruption.
 
 Then it pushes and replies to each thread.
 
