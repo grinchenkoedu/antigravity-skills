@@ -1,6 +1,8 @@
 .DS_Store
 .idea/
 .gemini/repo-profile.json
+.tasks/
+.gku/
 
 # scratch reports written by the skills — working notes, not history
 REVIEW.md
