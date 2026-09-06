@@ -8,7 +8,7 @@ $ConfigSkillsDir = Join-Path $HOME ".gemini\config\skills"
 
 # Directory names used before the gku- prefix was introduced. Removed on install so a
 # renamed skill does not linger beside its replacement and load twice.
-$LegacyNames = @("review", "plan", "implement", "pr-review", "pr-resolve", "verify", "reference", "init", "pr", "fix")
+$LegacyNames = @("review", "plan", "implement", "pr-review", "pr-resolve", "verify", "reference", "init", "pr", "fix", "audit", "research")
 
 # Determine source: use local repo if run from within the clone, else fetch from git
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
@@ -47,13 +47,31 @@ foreach ($name in $LegacyNames) {
     }
 }
 
-# Copy skills and the shared reference, overwriting existing ones
+# Copy skills, the shared reference, templates, and bin, overwriting existing ones
 Copy-Item -Recurse -Force (Join-Path $SrcDir "skills\*") $TargetDir
 $TargetRefDir = Join-Path $TargetDir "gku-reference"
 if (Test-Path $TargetRefDir) {
     Remove-Item -Recurse -Force $TargetRefDir
 }
 Copy-Item -Recurse -Force (Join-Path $SrcDir "gku-reference") $TargetDir
+
+$SrcTemplatesDir = Join-Path $SrcDir "templates"
+if (Test-Path $SrcTemplatesDir) {
+    $TargetTemplatesDir = Join-Path $TargetDir "templates"
+    if (Test-Path $TargetTemplatesDir) {
+        Remove-Item -Recurse -Force $TargetTemplatesDir
+    }
+    Copy-Item -Recurse -Force $SrcTemplatesDir $TargetDir
+}
+
+$SrcBinDir = Join-Path $SrcDir "bin"
+if (Test-Path $SrcBinDir) {
+    $TargetBinDir = Join-Path $TargetDir "bin"
+    if (Test-Path $TargetBinDir) {
+        Remove-Item -Recurse -Force $TargetBinDir
+    }
+    Copy-Item -Recurse -Force $SrcBinDir $TargetDir
+}
 
 # Link to Antigravity CLI and config workspace skill directories if needed
 foreach ($aliasDir in @($CliSkillsDir, $ConfigSkillsDir)) {
@@ -98,5 +116,5 @@ if ($SrcDir -eq $CloneDir) {
 }
 
 Write-Host "Installation/Update complete! Type '/' in Google Antigravity to see the skills."
-Write-Host "Available skills: /gku-init, /gku-plan, /gku-implement, /gku-fix, /gku-review,"
-Write-Host "/gku-pr, /gku-pr-review, /gku-pr-resolve, /gku-verify."
+Write-Host "Available skills: /gku-init, /gku-audit, /gku-research, /gku-plan, /gku-implement,"
+Write-Host "/gku-review, /gku-fix, /gku-pr, /gku-pr-review, /gku-pr-resolve, /gku-verify."

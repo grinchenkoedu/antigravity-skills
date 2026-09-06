@@ -9,7 +9,7 @@ CONFIG_SKILLS_DIR="$HOME/.gemini/config/skills"
 
 # Directory names used before the gku- prefix was introduced. Removed on install so a
 # renamed skill does not linger beside its replacement and load twice.
-LEGACY_NAMES="review plan implement pr-review pr-resolve verify reference init pr fix"
+LEGACY_NAMES="review plan implement pr-review pr-resolve verify reference init pr fix audit research"
 
 # Determine source: use local repo if run from within the clone, else fetch from git
 SCRIPT_DIR=""
@@ -46,10 +46,19 @@ for name in $LEGACY_NAMES; do
   fi
 done
 
-# Copy skills and the shared reference, overwriting existing ones
+# Copy skills, the shared reference, templates, and bin, overwriting existing ones
 cp -R "$SRC_DIR/skills/"* "$TARGET_DIR/"
 rm -rf "$TARGET_DIR/gku-reference"
 cp -R "$SRC_DIR/gku-reference" "$TARGET_DIR/"
+if [ -d "$SRC_DIR/templates" ]; then
+  rm -rf "$TARGET_DIR/templates"
+  cp -R "$SRC_DIR/templates" "$TARGET_DIR/"
+fi
+if [ -d "$SRC_DIR/bin" ]; then
+  rm -rf "$TARGET_DIR/bin"
+  cp -R "$SRC_DIR/bin" "$TARGET_DIR/"
+  chmod +x "$TARGET_DIR/bin/"* 2>/dev/null || true
+fi
 
 # Link to Antigravity CLI and config workspace skill directories if needed
 for alias_dir in "$CLI_SKILLS_DIR" "$CONFIG_SKILLS_DIR"; do
@@ -68,5 +77,5 @@ if [ "$SRC_DIR" = "$CLONE_DIR" ]; then
 fi
 
 echo "Installation/Update complete! Type '/' in Google Antigravity to see the skills."
-echo "Available skills: /gku-init, /gku-plan, /gku-implement, /gku-fix, /gku-review,"
-echo "/gku-pr, /gku-pr-review, /gku-pr-resolve, /gku-verify."
+echo "Available skills: /gku-init, /gku-audit, /gku-research, /gku-plan, /gku-implement,"
+echo "/gku-review, /gku-fix, /gku-pr, /gku-pr-review, /gku-pr-resolve, /gku-verify."
