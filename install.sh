@@ -22,7 +22,7 @@ if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/skills" ] && [ -d "$SCRIPT_DIR/gku-
   echo "Installing skills from local source ($SRC_DIR)..."
 else
   echo "Fetching latest skills from $REPO_URL..."
-  rm -rf "$CLONE_DIR"
+  rm -rf "${CLONE_DIR:?}"
   git clone --quiet --depth 1 "$REPO_URL" "$CLONE_DIR"
   SRC_DIR="$CLONE_DIR"
 fi
@@ -39,7 +39,7 @@ for name in $LEGACY_NAMES; do
   [ -d "$legacy" ] || continue
   if grep -rqs 'repo-profile' "$legacy"; then
     echo "  removing previous unprefixed copy: $name"
-    rm -rf "$legacy"
+    rm -rf "${legacy:?}"
   else
     echo "  NOTE: $TARGET_DIR/$name exists but does not look like ours — leaving it alone."
     echo "        If it is a leftover from an older install, remove it by hand."
@@ -48,14 +48,14 @@ done
 
 # Copy skills, the shared reference, templates, and bin, overwriting existing ones
 cp -R "$SRC_DIR/skills/"* "$TARGET_DIR/"
-rm -rf "$TARGET_DIR/gku-reference"
+rm -rf "${TARGET_DIR:?}/gku-reference"
 cp -R "$SRC_DIR/gku-reference" "$TARGET_DIR/"
 if [ -d "$SRC_DIR/templates" ]; then
-  rm -rf "$TARGET_DIR/templates"
+  rm -rf "${TARGET_DIR:?}/templates"
   cp -R "$SRC_DIR/templates" "$TARGET_DIR/"
 fi
 if [ -d "$SRC_DIR/bin" ]; then
-  rm -rf "$TARGET_DIR/bin"
+  rm -rf "${TARGET_DIR:?}/bin"
   cp -R "$SRC_DIR/bin" "$TARGET_DIR/"
   chmod +x "$TARGET_DIR/bin/"* 2>/dev/null || true
 fi
@@ -66,14 +66,14 @@ for alias_dir in "$CLI_SKILLS_DIR" "$CONFIG_SKILLS_DIR"; do
   if [ -L "$alias_dir" ]; then
     rm -f "$alias_dir"
   elif [ -d "$alias_dir" ]; then
-    rm -rf "$alias_dir"
+    rm -rf "${alias_dir:?}"
   fi
   ln -s "$TARGET_DIR" "$alias_dir"
 done
 
 # Clean up temporary clone if one was made
 if [ "$SRC_DIR" = "$CLONE_DIR" ]; then
-  rm -rf "$CLONE_DIR"
+  rm -rf "${CLONE_DIR:?}"
 fi
 
 echo "Installation/Update complete! Type '/' in Google Antigravity to see the skills."
