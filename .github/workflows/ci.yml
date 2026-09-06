@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shell script syntax check
+        run: |
+          bash -n bin/gku-survey install.sh
+
+      - name: ShellCheck lint
+        run: |
+          shellcheck -s bash -S warning bin/gku-survey install.sh
+
+      - name: Validate skill frontmatter
+        run: |
+          echo "Validating skills frontmatter..."
+          for skill_file in skills/gku-*/SKILL.md; do
+            [ -f "$skill_file" ] || continue
+            echo "Checking $skill_file..."
+            # Verify YAML frontmatter markers exist
+            head -n 1 "$skill_file" | grep -q '^---$' || {
+              echo "Error: $skill_file missing starting frontmatter marker '---'"
+              exit 1
+            }
+            # Verify name and description fields exist
+            grep -q '^name:' "$skill_file" || {
+              echo "Error: $skill_file missing 'name:' field in frontmatter"
+              exit 1
+            }
+            grep -q '^description:' "$skill_file" || {
+              echo "Error: $skill_file missing 'description:' field in frontmatter"
+              exit 1
+            }
+          done
+          echo "All skills passed frontmatter validation."
+
+      - name: Test installer
+        run: |
+          bash ./install.sh
