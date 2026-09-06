@@ -41,7 +41,23 @@ Stop early when there is nothing to do:
 
 ## Step 2 — Decide what to read
 
-Do not read everything. Rank by risk and read down the list until the budget is spent:
+**Read the branch's rulings first, if it has any.** A task file in `.tasks/` whose criteria
+match this diff, and the commit bodies on the branch, may carry `Ruling:` lines — decisions
+`/gku-implement` or `/gku-fix` made without asking, each with what it costs if wrong. They are
+claims about the code like any other: check each against the diff, and a ruling the code does
+not match is a finding at the severity its own cost line implies. They cost a `grep` and they
+point straight at the parts of the change nobody has agreed to yet.
+
+```bash
+git log <base>..HEAD --format='%h %b' | grep -i -A2 'Ruling:'
+```
+
+**On a pull request, the commits are the only source.** `.tasks/` is ignored by git, so
+somebody else's branch — and the worktree `/gku-pr-review` reads — carries no task file at all.
+Finding no rulings there is not evidence that none were made; say which sources you could
+actually read, the same way this skill names a file it judged from the diff alone.
+
+Then decide what to read. Do not read everything. Rank by risk and read down the list until the budget is spent:
 
 1. anything writing to the database, handling money or grades, changing schema, touching
    authentication or permissions, or building a file users download — **read fully, plus the
@@ -172,6 +188,10 @@ name. Anything it finds is a BLOCKER.
 Without `--deep`, do this yourself with `grep` for the *renamed and removed* symbols only —
 that is the case where a missed caller breaks the site — and skip the rest.
 
+**The task file narrows it.** When the branch has one, its steps name their `Modify:` paths;
+those are where a moved symbol was moved *from*, so grep them first. It is the difference
+between grepping a repository and grepping five files.
+
 ## Step 6 — Say it
 
 Write the review **in the conversation**, not to a file. Lead with the verdict:
@@ -193,7 +213,8 @@ pass was not done and why. A review with no security line is an unfinished revie
 to work out what to do with it, which is a step they should not have to take:
 
 - **blockers or warnings** → `/gku-fix` applies them, one commit each, re-checking every finding
-  against the code first. `/gku-fix --nits` takes the nits too.
+  against the code first. It asks how far down the list to go, nits included, so do not decide
+  that here.
 - **nits only, or clean** → `/gku-pr` opens the pull request; `/gku-verify` first if the change
   needs proving rather than re-reading.
 
