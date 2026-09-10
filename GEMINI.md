@@ -5,8 +5,9 @@ Repository containing agent skills, references, family templates, and installati
 ## Commands
 
 - **Install / test installation**: `./install.sh`
-- **Lint shell scripts**: `shellcheck -s bash -S warning bin/gku-survey install.sh`
-- **Check shell syntax**: `bash -n bin/gku-survey install.sh`
+- **Run evaluation test suites**: `bash evals/run-all.sh`
+- **Lint shell scripts**: `shellcheck -s bash -S warning bin/gku-survey bin/gku-guard install.sh evals/*.sh evals/*/*.sh`
+- **Check shell syntax**: `bash -n bin/gku-survey bin/gku-guard install.sh`
 - **Profile repository**: `bin/gku-survey`
 
 <!-- toolkit:begin family-rules -->
