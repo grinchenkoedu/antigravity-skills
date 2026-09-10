@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# The gku guard — a safety gate for Git and GitHub CLI commands.
+#
+# Supports both:
+# 1. Antigravity lifecycle hooks (PreToolUse on run_command in hooks.json):
+#    Reads JSON on stdin, outputs {"decision":"deny","reason":"..."} or {"decision":"allow"}
+# 2. Claude Code PreToolUse hooks and standalone shell calls:
+#    Reads JSON or command on stdin, exits 2 with reason on stderr when refused, 0 when allowed.
+#
+# Refuses the four things forbidden by gku rules in prose:
+#   git push --force / --force-with-lease / -f
+#   git commit --amend
+#   --no-verify on any git command
+#   git push to the base branch (main, master, or the profile's baseBranch)
+# and the gh commands that end or ship a change rather than propose one:
+#   gh pr merge, gh pr review --approve, gh release, gh workflow run,
+#   gh api ... /merge
+
+input="$(cat)"
+
+is_antigravity=0
+cmd=""
+hook_cwd=""
+
+if command -v jq >/dev/null 2>&1; then
+  # Check if Antigravity PreToolUse payload
+  agy_cmd="$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // empty' 2>/dev/null)"
+  if [ -n "$agy_cmd" ]; then
+    is_antigravity=1
+    cmd="$agy_cmd"
+    hook_cwd="$(printf '%s' "$input" | jq -r '.workspacePaths[0] // .cwd // empty' 2>/dev/null)"
+  else
+    claude_cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
+    if [ -n "$claude_cmd" ]; then
+      cmd="$claude_cmd"
+      hook_cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)"
+    fi
+  fi
+else
+  # -E, because BSD sed has no \| alternation in a basic regex
+  if printf '%s' "$input" | grep -q '"toolCall"'; then
+    is_antigravity=1
+    cmd="$(printf '%s' "$input" | sed -E -n 's/.*"CommandLine"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' | head -1)"
+  else
+    cmd="$(printf '%s' "$input" | sed -E -n 's/.*"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' | head -1)"
+  fi
+fi
+
+# If input was not JSON, fallback to raw input or first arg
+if [ -z "$cmd" ]; then
+  if [ $# -gt 0 ]; then
+    cmd="$*"
+  elif [ -n "$input" ] && ! printf '%s' "$input" | grep -q '^[[:space:]]*{'; then
+    cmd="$input"
+  fi
+fi
+
+allow() {
+  if [ "$is_antigravity" -eq 1 ]; then
+    printf '{"decision":"allow"}\n'
+  fi
+  exit 0
+}
+
+refuse() {
+  local reason="$1"
+  if [ "$is_antigravity" -eq 1 ]; then
+    # JSON-encode reason string
+    local escaped
+    escaped="$(printf '%s' "$reason" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+    printf '{"decision":"deny","reason":"The gku guard refuses: %s"}\n' "$escaped"
+    exit 0
+  else
+    printf 'The gku guard refuses: %s\n' "$reason" >&2
+    exit 2
+  fi
+}
+
+[ -n "$cmd" ] || allow
+case "$cmd" in *git*|*gh*) ;; *) allow ;; esac
+
+# Match against the command with quoted text blanked out: a commit message
+# that names a flag — git commit -m "never pass --no-verify" — is talk about
+# the flag, not use of it. Everything outside the quotes survives, so the
+# flags themselves are still seen.
+scan="$(printf '%s' "$cmd" | sed -E "s/'[^']*'/''/g; s/\"[^\"]*\"/\"\"/g")"
+
+if printf '%s' "$scan" | grep -Eq 'git[^|;&]*push[^|;&]*(--force|--force-with-lease|(^|[[:space:]])-f([[:space:]]|$))'; then
+  refuse "a forced push rewrites history somebody else may have. Push a new commit instead."
+fi
+if printf '%s' "$scan" | grep -Eq 'git[^|;&]*commit[^|;&]*--amend'; then
+  refuse "--amend rewrites the last commit. Make a new commit instead."
+fi
+if printf '%s' "$scan" | grep -Eq 'git[^|;&]*--no-verify'; then
+  refuse "--no-verify skips a hook. A failing hook means the code needs fixing."
+fi
+
+# Merging and shipping are where every skill here stops, including a run given
+# --auto, which pushes and opens a pull request with nobody watching.
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*pr[^|;&]*[[:space:]]merge([[:space:]]|$)'; then
+  refuse "merging is where this stops. Open or update the pull request; a person merges it."
+fi
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*pr[^|;&]*[[:space:]]--approve([[:space:]]|$)'; then
+  refuse "approving is a reviewer's act. A run that wrote the change cannot also approve it."
+fi
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*release[[:space:]]+(create|edit|delete|upload)([[:space:]]|$)'; then
+  refuse "a release ships to users. That is a decision a person makes, after the merge."
+fi
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*workflow[[:space:]]+(run|enable|disable)([[:space:]]|$)'; then
+  refuse "running a workflow reaches CI and whatever it deploys. Ask before triggering it."
+fi
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*api[^|;&]*/merge'; then
+  refuse "that API call merges. Opening the pull request is where this stops."
+fi
+
+base=""
+if command -v jq >/dev/null 2>&1; then
+  profile=""
+  if [ -f "${hook_cwd:+$hook_cwd/}.gemini/repo-profile.json" ]; then
+    profile="${hook_cwd:+$hook_cwd/}.gemini/repo-profile.json"
+  elif [ -f "${hook_cwd:+$hook_cwd/}.claude/repo-profile.json" ]; then
+    profile="${hook_cwd:+$hook_cwd/}.claude/repo-profile.json"
+  fi
+  [ -n "$profile" ] && base="$(jq -r '.baseBranch // empty' "$profile" 2>/dev/null)"
+fi
+
+for b in main master ${base:+"$base"}; do
+  b_re="$(printf '%s' "$b" | sed -E 's|[^a-zA-Z0-9_/-]|\\&|g')"
+  if printf '%s' "$scan" | grep -Eq "git[^|;&]*push[^|;&]*([[:space:]]|:)\+?(refs/heads/)?$b_re([[:space:]]|:|\$)"; then
+    refuse "a push to the base branch '$b'. A change lands through a pull request — /gku-pr opens it."
+  fi
+done
+
+allow
