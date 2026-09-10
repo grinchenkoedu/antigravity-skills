@@ -1,36 +1,37 @@
 ---
 name: gku-audit
 model: pro
-description: Read a whole repository against the rules — security, secrets, licence, agent readiness, and conventions — then ask what is unclear and hand /gku-implement a task file broken into rounds.
-argument-hint: "[--area <areas>] [--deep] [--provenance] [--dry-run]"
-user-invocable: true
+description: Audit a whole repository — not a diff — against the rules the other skills already apply to a change: the security checklist, code provenance and licensing, the family's code-quality rules, and whether the repository is ready for agent-driven development (GEMINI.md, AGENTS.md, an ignored profile, a detectable test command). Asks you in the chat, in one batched round, the decisions that block a fix — which licence, whether a copyleft dependency may stay, where a copied block came from — and writes your answers in as steps. Writes a task file in the /gku-plan shape, findings grouped into branch-sized rounds, that /gku-implement builds in one run or one step at a time. Read-only; writes no production code.
 ---
 
-# /gku-audit — read the repository against the rules
+# /gku-audit — read the whole repository against the rules, then hand over a plan
 
-A whole-repository health check. It reads the tree against the rules this toolkit checks in a
-review — security, secrets, licence, agent readiness, and code quality — then batches what is
-unclear into questions for the chat, and hands `/gku-implement` a task file broken into rounds
-sized for one pull request each.
+Every other skill applies the toolkit's rules to a change. This one applies them to the
+repository as it stands: a codebase being onboarded, a plugin inherited from someone else, a
+project about to be published. It invents no rules of its own — it reads the tree against the
+same reference files `/gku-review` and `/gku-init` use, adds only the checks that make sense for
+a whole tree and not for a diff, asks you the decisions its findings wait on, and writes what it
+found as a task file `/gku-implement` can build from, one round at a time.
 
-It is for **starting work in a repository**, for **catching drift** before a release, and for
-projects that have never had an agent audit. It is the one skill allowed to read a whole tree
-instead of a diff; it stays affordable by using sweeps over the files and reading only the ten
-highest-risk files in full.
+Run it rarely — on onboarding, before a release, after a long gap. It is the one skill that reads
+a tree instead of a diff, and it says which files it read.
 
-Read-only. It writes the task file, and nothing else.
+Read-only. The only file it writes is the task file.
 
 ## Arguments
 
-- **nothing** — audit all five areas across the repository.
-- `--area <areas>` — comma-separated subset: `security`, `secrets`, `licensing`, `agents`,
-  `quality`. Each has its own sweep and its own section in the report.
-- `--deep` — one sub-agent on a small fast model scans the secondary files for provenance tells
-  and forgotten entry points. Capped, with its prompt recorded in Evidence.
-- `--provenance` — for code that looks copied, search GitHub for the source and check its
-  licence against ours. The only flag that reaches the internet; sends stripped code fingerprints,
-  never secrets or configuration, and reports how many it sent.
-- `--dry-run` — print the summary and the batched questions in the chat; write no file.
+- **nothing** — audit the current repository, all four areas.
+- `--area <name>` — repeatable; restrict to `security`, `licence`, `quality` or `agents`.
+- `--deep` — allow one sub-agent, on a small fast model, for mechanical search over a large tree.
+  Stays local.
+- `--provenance` — hunt for the **origin** of code that reads as copied (step 5b): fingerprints
+  of candidate blocks are searched on GitHub and the hits compared side by side. A separate flag,
+  not part of `--deep`, because it is the only step that sends fragments of the code to an
+  outside search; the developer opts into that explicitly. With both flags the sub-agent picks
+  the candidates over the whole tree.
+
+No path argument: the audit is of the repository it runs in. Given a branch or a pull request,
+say that `/gku-review` and `/gku-pr-review` are for those and stop.
 
 ## Step 1 — Profile and inventory
 
@@ -76,12 +77,14 @@ is not clearance.
   project whose own licence is not copyleft is **flagged for a person to decide** — the skill
   names both licences and never rules on compatibility.
 - **Agent readiness** — `GEMINI.md` and `AGENTS.md`: present, and which one is the pointer;
-  `.gitignore` covering `.gemini/repo-profile.json` (and `.claude/repo-profile.json`), `.gku/`
-  and `.tasks/` (the rules in `gku-reference/repo-profile.md` and `gku-reference/reports.md`);
-  a test command that `gku-reference/repo-profile.md` step 5 can detect — a `Makefile`, manifest
-  scripts, a CI workflow; a CI workflow at all; a container definition (`docker-compose.yml`,
-  a development `Dockerfile`) so `exec.kind` need not be `host`; `.github/pull_request_template.md`
-  and `CONTRIBUTING.md`, noted as present or absent.
+  `.gitignore` covering `.gemini/repo-profile.json`, `.gku/` and `.tasks/` (the rules in
+  `gku-reference/repo-profile.md` and `gku-reference/reports.md`); a test command that
+  `gku-reference/repo-profile.md` step 5 can detect — a `Makefile`, manifest scripts, a CI workflow;
+  a CI workflow at all; a container definition (`docker-compose.yml`, a development `Dockerfile`)
+  so `exec.kind` need not be `host`; `.gemini/settings.json` and anything else tracked under
+  `.gemini/` read **as code** (`gku-reference/untrusted-input.md`) — a permission or hook that
+  pushes, passes `--no-verify` or `--force`, or fetches a URL is a finding;
+  `.github/pull_request_template.md` and `CONTRIBUTING.md`, noted as present or absent.
 
 ## Step 3 — Rank and read, ten files at most
 
@@ -152,37 +155,51 @@ skill's:
    hits. Never a configuration file, a fixture, or anything the secrets sweep touched.
 2. **Fingerprints.** Two or three per candidate, as the reference describes: distinctive, five
    words or more, never the project's own name or URLs, never anything that could be a
-   credential.
-3. **Search.** `gh search code` paced at ten calls a minute, fallback to a web search,
-   **thirty queries at most across the whole hunt**. Report the query count under Scope.
-4. **Compare and decide.** For each hit, fetch the source and compare side by side, check the
-   creation dates for direction, and write the finding with `path:lines`, `<owner/repo>@<path>`,
-   both licences, and the way round.
+   credential. **Thirty queries at most** for the run.
+3. **Search.** `gh search code` first — the `gh` the toolkit already requires, signed in; it is
+   rate-limited to about ten calls a minute, so pace the queries and stop at the cap. Not signed
+   in → a web search of the same string. Neither available → the hunt is **skipped and named as
+   skipped**, never dropped silently. Hits in this repository and its forks are ignored.
+4. **Compare and decide** exactly as the reference says: fetch the matched file, read the block
+   beside ours, read the hit's licence, work out the direction of the copy as far as it can be
+   told, and settle on the reference's severity. When the direction cannot be told, say so — the
+   developer's word settles it.
+5. **Report** what the reference lists per finding — our `path:lines`, the source with its
+   licence against ours, the tell, two matching lines, the way round. "Was this copied, and on
+   what terms" and the direction question go to step 5d, where the developer is the only source
+   that can answer them. The Scope line says how many fingerprints were sent and where, because
+   fragments of the code left the machine.
 
-## Step 5c — With `--deep`, the sub-agent pass
+The hunt never concludes that a licence is compatible with the project's. It names both and
+hands the question over.
 
-When `--deep` was passed, launch one sub-agent on a small fast model (`flash`):
+## Step 5c — Severities, and what becomes a step
 
-- prompt: "Scan the tracked files under `<dirs>` for entry points the inventory missed —
-  unregistered CLI scripts, standalone AJAX handlers, forgotten endpoints — and for files under
-  `lib/` or `helpers/` that look vendored. List each with `path:line` and one sentence on why."
-- read-only; no edits, no git commands, no network calls.
-- its output is evidence, not findings: check each hit before putting it in the report, the same
-  way tool output is checked.
+Severities are `/gku-review`'s three. Every BLOCKER and WARNING carries `path:line`, one
+sentence on the problem, one on the fix, and the evidence — the demonstrating input, the tool's
+summary line, the manifest field. A finding that cannot be quoted drops a severity and is
+marked `[unverified]`. Rank concerns; severity says how much a thing matters *here*, and a
+finding is never written as wrong in the absolute.
 
-## Step 5d — Ask what is still unclear
+A finding becomes a **step** when the fix is mechanical enough for `/gku-implement`: remove and
+ignore a tracked secret (with "rotated" as a criterion a person confirms), bind a query, add a
+permission check, add the GPL headers, commit a lock file, add `.gku/` to `.gitignore`, run
+`/gku-init`. A finding whose fix is a **decision** — which licence, whether a copyleft
+dependency may stay, which of two standards docs is true, whether to leave an end-of-life
+runtime, the origin of a block that reads as copied — is not a step yet. It goes to step 5d,
+which asks the developer; what comes back becomes an ordinary step, and what does not stays a
+numbered **open question** with any step depending on it marked *after Q<n>*. Nits are listed
+and get no step.
 
-An audit leaves decisions behind. The code alone cannot tell whether an EOL runtime is
-acceptable until the next milestone, whether a missing capability was intentional, which of two
-licences a developer meant, or whether a copied block had verbal approval.
+A standards-doc rule that forbids the change a step would make does not stop the audit — it is
+read-only — and does not delete the step. The step names the way round: a change made by hand,
+a fork the rule does not cover, or a question. The developer chooses.
 
-Parking those questions in the report produces a document nobody can act on. A finding is only
-a step when its fix is clear; a finding whose fix waits on a choice has to have the choice made
-first.
+## Step 5d — Ask the decisions, before the file is written
 
-Steps 1–5 give you the context: you have read the tree, the sweep hits are in front of you, the
-options are obvious, and the person who can settle it is usually the one who just ran the command.
-Ask them **here, in the chat**, and write the answers in as steps. A file of open questions is a
+The decisions from step 5c are the audit's dead ends: each one holds up a fix that is otherwise
+obvious, and the person who can settle it is usually the one who just ran the command. Ask
+them **here, in the chat**, and write the answers in as steps. A file of open questions is a
 file somebody has to come back to; a file of steps is one `/gku-implement` can build.
 
 **One round, three or four questions at most.** A whole-tree audit can raise a dozen; ask the

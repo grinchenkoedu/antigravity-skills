@@ -2,8 +2,6 @@
 name: gku-review
 model: pro
 description: Review your own changes before you push or open a pull request — a severity-rated list of what to fix, checked against the repository's own conventions, a lint pass over the changed files, its tests, a security pass over the well-known flaws (injection, escaping, login and permission checks, CSRF, secrets, files, outbound requests), and the failure modes that green tests miss. Ends by naming the next step. Review-only; never edits, commits or pushes.
-argument-hint: "[branch] [--target <base>] [--deep] [--report]"
-user-invocable: true
 ---
 
 # /gku-review — check your own work before anyone else sees it
@@ -24,6 +22,13 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 ## Step 1 — Work out what changed
 
+The branch and the working tree, gathered before this skill ran — read them here rather than
+asking git again. The status is cut at 40 lines, so a long one is a sample, not the whole
+tree — count it with `git status --porcelain | wc -l` if the number matters:
+
+`git branch --show-current 2>/dev/null || true`
+`git status --short 2>/dev/null | head -40 || true`
+
 Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` in this plugin — detect and
 cache it if missing), and `gku-reference/exec.md` for how the lint command in step 4b runs.
 
@@ -32,8 +37,8 @@ git diff --stat <base>...HEAD
 git diff --name-status <base>...HEAD
 ```
 
-Include uncommitted work too (`git status --porcelain`) — reviewing only committed changes
-misses the half you were about to commit.
+Include the uncommitted work from the status above — reviewing only committed changes misses
+the half you were about to commit.
 
 Stop early when there is nothing to do:
 - on the base branch itself → "You are on `<base>` — switch to your branch first."
@@ -57,7 +62,8 @@ somebody else's branch — and the worktree `/gku-pr-review` reads — carries n
 Finding no rulings there is not evidence that none were made; say which sources you could
 actually read, the same way this skill names a file it judged from the diff alone.
 
-Then decide what to read. Do not read everything. Rank by risk and read down the list until the budget is spent:
+Then decide what to read. Do not read everything — rank by risk and read down the list until
+the budget is spent:
 
 1. anything writing to the database, handling money or grades, changing schema, touching
    authentication or permissions, or building a file users download — **read fully, plus the
