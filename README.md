@@ -434,6 +434,7 @@ fixing, `/gku-fix` does the same investigation and then acts on it.
 /gku-implement .tasks/export-department-collision.md
 /gku-implement add a CSV option to the student export
 /gku-implement .tasks/big-task.md --continue
+/gku-implement .tasks/big-task.md --auto
 ```
 
 Works sequentially in your working tree — no background agents, nothing hidden. It creates a
@@ -443,8 +444,26 @@ writes tests, and runs the suite.
 **The task file is also the progress log.** Each finished step gets ticked off with a note of
 what landed, which is what makes `--continue` work after an interruption.
 
-It stays inside the task. If it notices something else broken, it tells you at the end rather
-than quietly fixing it — an implementation that wanders is one nobody can review.
+It stays inside the task. Something it notices along the way is fixed only when the step cannot
+land without it; a plan that turns out not to reach its goal comes back to you before anything
+is built differently; everything else is reported at the end and left alone. An implementation
+that wanders is one nobody can review.
+
+**`--auto` runs the whole cycle unattended** — build, review its own diff, fix what that found,
+run the tests, and round again until nothing is left — then pushes the branch and opens the pull
+request. A task big enough to need several branches gets several pull requests, each based on
+the one before it and saying so. It asks everything it needs at the start, in one batch, and
+after that stops only for something that genuinely needs you: a decision with no defensible
+default, a plan that cannot reach its goal, three rounds with a test still failing. When it does
+stop, the work is committed, pushed and waiting in a draft pull request rather than lost.
+
+**What it left alone, it writes down.** A nit it skipped, a criterion met narrowly, something
+that needs a plan of its own, an assumption it had to make because nobody was there to ask —
+each lands in the task file as it comes up and in the pull request description, and the run ends
+by putting that list in front of you *before* it says the plan is done.
+
+**It never merges and it never deploys** — with `--auto` or without it. The open pull request is
+where it ends; merging is yours.
 
 ### `/gku-review` — check your own work
 
@@ -724,9 +743,15 @@ something has to be built, and otherwise the answer in the chat — written to
 Most of this is prose, and prose is a rule the model can misread. A few things are mechanism
 instead:
 
-- **A guard on dangerous git actions.** The skills that write refuse `--force`, `--force-with-lease`,
-  `--no-verify`, `git commit --amend`, and a push to the base branch — including the spellings that
-  hide one: `+main`, `HEAD:refs/heads/main`. Talk about a flag in a commit message is not use of it.
+- **A guard on dangerous git and gh actions.** The guard utility (`bin/gku-guard`) enforces safety
+  rules via Antigravity `PreToolUse` lifecycle hooks (`hooks.json`) or CLI invocations. It reads
+  the command about to execute and refuses `--force`, `--force-with-lease`, `--no-verify`,
+  `git commit --amend`, and a push to the base branch — including the spellings that hide one:
+  `+main`, `HEAD:refs/heads/main`. Talk about a flag in a commit message is not use of it. It
+  refuses the commands that end or ship a change rather than propose one, too — `gh pr merge`,
+  `gh pr review --approve`, `gh release`, `gh workflow run`, and the `gh api` call that merges —
+  so a skill allowed to push and open a pull request still stops there. `gh pr ready` is
+  deliberately allowed: `/gku-pr` offers it when the work behind a draft is finished.
 - **Frontmatter that matches the descriptions.** The skills define explicit model preferences
   (`pro` for `/gku-plan`, `/gku-review`, `/gku-audit`, `/gku-research` where deep reasoning is
   paramount) and clear descriptions so the user and agent select the right tool for the job.
@@ -881,8 +906,12 @@ its own file name. What code may be copied from — own work, a dependency, or a
 approval — is in `gku-reference/code-provenance.md`; a skill that writes code follows it, and a
 skill that reviews code looks for its tells.
 
-A standalone utility script belongs in `bin/` (e.g. `bin/gku-survey`) and must run read-only
+A standalone utility script belongs in `bin/` (e.g. `bin/gku-survey`, `bin/gku-guard`) and must run read-only
 without modifying project files. Reference files belong in `gku-reference/`.
+
+**The checks.** `bash evals/run-all.sh` runs every suite under `evals/` — one script per rule,
+each printing a summary line and exiting non-zero the moment its rule stops holding. CI runs the
+same command on every push and pull request, alongside `shellcheck` and the installer test.
 
 A change to a `SKILL.md`, `templates/` or to `gku-reference/` is code that runs in every session
 on every machine that updates the skills. Review it as such.

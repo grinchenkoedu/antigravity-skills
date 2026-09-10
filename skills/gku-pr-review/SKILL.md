@@ -2,8 +2,6 @@
 name: gku-pr-review
 model: pro
 description: Deep review of someone else's pull request in an isolated worktree — hunts the failures that automated review misses (broken error paths, infinite loops, races, blast radius, claim-vs-code drift), deduplicates against the bot's comments, and gives a short verdict in chat. Read-only; never edits, pushes or posts.
-argument-hint: "<pr-number-or-url> [--repo <owner/name>] [--deep] [--report]"
-user-invocable: true
 ---
 
 # /gku-pr-review — review someone else's pull request
@@ -131,7 +129,7 @@ with comments authored by `Copilot`).
   style; it approves changes containing infinite loops and broken permissions. Never let it
   soften your verdict.
 
-With `--deep`, one sub-agent on a small fast model may look up callers of changed symbols.
+With `--deep`, one subagent (such as the research subagent) may look up callers of changed symbols.
 Otherwise `grep` the worktree yourself for renamed and removed names only.
 
 ## Step 6 — Say it, briefly

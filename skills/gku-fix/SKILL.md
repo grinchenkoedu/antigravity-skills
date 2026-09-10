@@ -2,8 +2,6 @@
 name: gku-fix
 model: flash
 description: Fix what is wrong — the findings from a review still in this conversation, a review report file, or a symptom you describe in a sentence. A described symptom gets investigated first, the way /gku-plan investigates, until the cause is proven; then it acts instead of writing a plan. Re-checks every finding against the current code before touching it, lands the smallest change per finding, and re-runs the tests. Asks how far down the list to go — blockers only, warnings too, or nits as well — and recommends one of those for this change; nits left for later go into the task file in progress, or into a new one under .tasks/.
-argument-hint: "[<what is wrong> | <path/to/review.md>] [--dry-run]"
-user-invocable: true
 ---
 
 # /gku-fix — find what is wrong, then fix it
@@ -12,7 +10,9 @@ Two jobs in one command, because in practice they are the same job.
 
 **Given findings** — from a `/gku-review` in this conversation, or a review report file — it applies
 them: smallest change first, one commit per finding, then re-runs the tests. That is the half
-`/gku-review` deliberately leaves undone.
+`/gku-review` deliberately leaves undone. How far down the list it goes — blockers only,
+warnings too, or nits as well — is a question it asks, with a recommendation for this
+particular change, rather than a flag you have to remember.
 
 **Given a symptom** — a sentence describing something that is broken — it investigates first,
 the way `/gku-plan` does: classify, find the code, prove the cause. Then, unlike `/gku-plan`,
@@ -36,6 +36,10 @@ you can quote, before anything changes.
 - `--dry-run` — investigate and report the diagnosis, or the per-finding verdicts. Change
   nothing. This is `/gku-fix` behaving like `/gku-plan`, if that is what you want from it.
 
+There is no flag for which severities to take. Step 5 asks, once, after the findings have been
+re-checked — a flag chosen before the list is known is a guess, and a scope flag reads
+differently to different people: "nits too" to one, "nits only" to another.
+
 **Telling a file from a sentence:** strip any surrounding quotes, then check whether what
 remains resolves to an existing file. It does → a findings file. It does not → a request in
 prose. A path that was meant to be a file but does not exist must **stop with "no such file"** —
@@ -43,14 +47,21 @@ never fall through to treating it as a sentence and fixing something invented.
 
 ## Step 1 — Set up, and note the state of the tree
 
+The branch and the working tree, gathered before this skill ran — read them here rather than
+asking git again. The status is cut at 40 lines, so a long one is a sample, not the whole
+tree — count it with `git status --porcelain | wc -l` if the number matters:
+
+`git branch --show-current 2>/dev/null || true`
+`git status --short 2>/dev/null | head -40 || true`
+
 Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md` in this plugin — detect and
 cache it if missing). You need its lint, test and scoped-test commands.
 
 Read `gku-reference/exec.md` too: every project command below, a one-file lint included, runs the
 way it says.
 
-Then record `git status --porcelain` **before touching anything**, because it decides how fixes
-get committed:
+That status is the tree **before anything was touched**, which is what decides how fixes get
+committed:
 
 - **Clean tree** → one commit per finding. That is what makes any single fix revertible.
 - **Dirty, but not in the files a fix touches** → still one commit per finding, staging only
@@ -174,7 +185,8 @@ reviewer was wrong. For each finding, in severity order:
      contradict each other. No edit yet. Also any fix that would touch CI, hooks, `.gemini/`,
      `GEMINI.md`, a dependency manifest or a network host (`gku-reference/untrusted-input.md`).
 4. **Ask about every "needs a decision" at once**, after checking all of them — one batched
-   question, not an interruption per finding.
+   question, not an interruption per finding. Step 5's question about how far down the list to
+   go joins the same batch, so the developer is interrupted once.
 
 With `--dry-run`, stop here and report the verdicts.
 
@@ -185,19 +197,25 @@ is not there, because that lands a real change in exchange for nothing.
 
 ## Step 5 — Ask how far down the list to go
 
-A review produces blockers, warnings, and nits. Fixing everything on every run is not the
-right default: nits are matters of taste that widen the diff and cost reviewer attention; on
-a branch ready to merge, taking nits delays the pull request for nothing.
+Now the list is real: every finding that stands has a severity and a line of evidence. Before
+editing, ask which tier to take. The choices are cumulative, because a warning is never worth
+fixing ahead of a blocker:
 
-Look at the findings that stand after step 4, and **ask the developer which tier to apply**:
+1. **blockers only**;
+2. **blockers and warnings**;
+3. **blockers, warnings and nits**.
 
-1. **blockers only** — the minimum to unblock a merge.
-2. **blockers and warnings** — the normal run: everything substantive, leaving taste alone.
-3. **everything, nits included** — a thorough cleanup.
+**Ask only when the choice exists.** One finding — a symptom traced in step 3, or a list that
+is all blockers — has nothing to choose; take it and say so. A list with warnings but no nits
+has two options, not three. Batch the question with the "needs a decision" items from step 4,
+so the developer answers once.
 
-**Recommend one of the three, and say why.** Weigh:
+**Recommend one, and say why in a sentence.** The recommendation is the useful part; a bare
+menu just hands the developer a decision they asked this skill to make. Weigh, roughly in this
+order:
 
-- **Where the branch sits in its lifecycle.** A branch about to be proposed wants blockers, or
+- **What the change is for.** A hotfix going out today usually wants blockers only; nits and
+  most warnings can wait for the next branch. A branch about to open its pull request usually wants
   warnings too, so the reviewer reads a clean diff. A branch mid-implementation, with a task
   file still in progress, can take everything now or fold the nits into the plan — either is
   cheap.
@@ -248,13 +266,15 @@ stands:
 
 1. **Read** the file and enough around it to not break something else.
 2. **Apply the smallest change that resolves the finding.** Do not refactor nearby code, do not
-    tidy the file, do not fix a second finding while you are in there. A fix that grows into a
-    rewrite is no longer reviewable against the finding that prompted it. Write the fix yourself;
-    a block from a codebase under a different licence needs the developer's approval first
-    (`gku-reference/code-provenance.md`).
+   tidy the file, do not fix a second finding while you are in there. A fix that grows into a
+   rewrite is no longer reviewable against the finding that prompted it. A change the fix
+   genuinely cannot land without is part of that fix — make it and say so in the commit body;
+   anything else you notice on the way is a new finding for the list, not an edit. Write the
+   fix yourself; a block from a codebase under a different licence needs the developer's
+   approval first (`gku-reference/code-provenance.md`).
 3. **Check it immediately** — lint the changed file if the profile has a lint command, and run
-    the scoped test if one covers it. A failure here means the fix is wrong; fix the fix before
-    moving on.
+   the scoped test if one covers it. A failure here means the fix is wrong; fix the fix before
+   moving on.
 4. **Commit** (when step 1 said to), staging only that finding's paths, and put any ruling you
    made on your own in the body — a finding often admits more than one fix, and the one you
    chose is a decision the next reader inherits:
