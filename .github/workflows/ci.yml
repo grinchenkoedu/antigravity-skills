@@ -18,34 +18,15 @@ jobs:
 
       - name: Shell script syntax check
         run: |
-          bash -n bin/gku-survey install.sh
+          bash -n bin/gku-survey bin/gku-guard install.sh evals/*.sh evals/*/*.sh
 
       - name: ShellCheck lint
         run: |
-          shellcheck -s bash -S warning bin/gku-survey install.sh
+          shellcheck -s bash -S warning bin/gku-survey bin/gku-guard install.sh evals/*.sh evals/*/*.sh
 
-      - name: Validate skill frontmatter
+      - name: Run evaluation test suites
         run: |
-          echo "Validating skills frontmatter..."
-          for skill_file in skills/gku-*/SKILL.md; do
-            [ -f "$skill_file" ] || continue
-            echo "Checking $skill_file..."
-            # Verify YAML frontmatter markers exist
-            head -n 1 "$skill_file" | grep -q '^---$' || {
-              echo "Error: $skill_file missing starting frontmatter marker '---'"
-              exit 1
-            }
-            # Verify name and description fields exist
-            grep -q '^name:' "$skill_file" || {
-              echo "Error: $skill_file missing 'name:' field in frontmatter"
-              exit 1
-            }
-            grep -q '^description:' "$skill_file" || {
-              echo "Error: $skill_file missing 'description:' field in frontmatter"
-              exit 1
-            }
-          done
-          echo "All skills passed frontmatter validation."
+          bash evals/run-all.sh
 
       - name: Test installer
         run: |
