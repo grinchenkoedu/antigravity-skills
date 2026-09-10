@@ -434,9 +434,11 @@ the conversation could answer is left open, and it names who can answer it.
 `--review` is for when the file *already* proposes a solution: it judges that proposal rather
 than inventing a different one.
 
-**`--manual` writes the plan for you to build by hand.** For a repository where the code has to
-be written by a person, and for learning your way around one. Same investigation, different
-file: each step names the file, the symbol, the shape to write and the code here to mirror,
+**`--manual` writes the plan for you to build by hand.** Pass `--manual` at the start of the
+prompt (`/gku-plan --manual <request>`). The word `manual` without `--` (e.g. `/gku-plan write a user manual`
+or `/gku-plan manual sync`) is an ordinary request and never activates this mode. For a repository
+where the code has to be written by a person, and for learning your way around one. Same investigation,
+different file: each step names the file, the symbol, the shape to write and the code here to mirror,
 says *why* it is shaped that way, gives you the command that proves it — and ends by reminding
 you to commit that step yourself, because nothing in this mode commits for you.
 

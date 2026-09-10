@@ -44,6 +44,10 @@ grep '^description:' "$skills/gku-plan/SKILL.md" | grep -q -- '--manual' \
   || note 'plan: --manual is missing from description, so nothing advertises it'
 has "$planf" '- --manual —' || note 'plan: --manual has no entry in the Arguments list'
 has "$planf" '## Step 6b' || note 'plan: --manual has no section of its own'
+has "$planf" '--manual must be the first token in the prompt' \
+  || note 'plan: does not require --manual to be the first token in the prompt'
+has "$planf" 'The word manual without -- is never the flag' \
+  || note 'plan: does not warn that the word manual without -- is not the flag'
 
 # What makes it a manual plan rather than a plan with a different name. Without
 # the first of these the mode writes an implementation to paste, which is what

@@ -35,6 +35,10 @@ They are only useful for marking where prose ends when a flag follows it.
 - `--deep` — allow one sub-agent for mechanical code search on a large unfamiliar area.
 - `--manual` — write the plan for a **person** to build by hand rather than for
   `/gku-implement`: the same investigation, a different file (see step 6b).
+  `--manual` must be the first token in the prompt (`/gku-plan --manual <request>`).
+  The word `manual` without `--` is never the flag — requests like `/gku-plan manual sync`
+  or `/gku-plan write a user manual` are ordinary requests, not manual mode. Nor does
+  `--manual` appearing later in the prose trigger it (e.g. `/gku-plan add a --manual flag`).
 
 ## Step 1 — Understand the request
 
@@ -230,6 +234,11 @@ Omit acceptance criteria and steps for a pure question — the answer is the del
 
 ## Step 6b — `--manual`: the plan a person builds by hand
 
+`--manual` activates **only** when `--manual` is the first token in the prompt (`/gku-plan --manual ...`).
+The word `manual` without `--` is never the flag (e.g. "user manual", "manual sync" are standard plans).
+Mentions of `--manual` later in the sentence (e.g. "add a --manual flag to the CLI") describe what to
+build, not how to plan.
+
 `--manual` changes nothing above this line. Steps 1–5 run exactly as written — the
 classification, the code reading, the fact-checking with source tags, the batched question
 round — a plan somebody follows by hand is worth only as much as the evidence under it.
@@ -396,6 +405,8 @@ nothing is locked in.
 - **`--manual` writes for a person, and warns them to commit.** Shapes and reasons, never a
   paste-ready implementation; the marker in the header; and the warning that nothing in that
   file commits for them — at the top, at the end of every step, and in the hand-off.
+  `--manual` triggers only when passed as the first token in the prompt; the word `manual`
+  without `--` is ordinary English and never activates manual mode.
 
 ## Edge cases
 
