@@ -2,8 +2,6 @@
 name: gku-pr-resolve
 model: flash
 description: Work through the review comments on your own pull request, from any directory — pass a URL and it resolves the repository, reusing a local clone or making one. Every finding gets a verdict before any code changes (agree, disagree with evidence, or ask you), then fixes land one commit per finding, get pushed, and each thread gets a reply. Never fixes blindly; reviewers and bots are sometimes wrong.
-argument-hint: "<pr-url | pr-number> [--repo <owner/name>] [--in <path>] [--dry-run]"
-user-invocable: true
 ---
 
 # /gku-pr-resolve — act on the comments on your pull request
@@ -33,6 +31,13 @@ codebase*. Every finding is checked against the code before anything is edited.
 Required either way: there is no default target. This skill changes files and pushes.
 
 ## Step 1 — Work out which pull request, and where
+
+The branch and the working tree, gathered before this skill ran — read them here rather than
+asking git again. The status is cut at 40 lines, so a long one is a sample, not the whole
+tree — count it with `git status --porcelain | wc -l` if the number matters:
+
+`git branch --show-current 2>/dev/null || true`
+`git status --short 2>/dev/null | head -40 || true`
 
 **Resolve the target first, before assuming anything about the current directory.**
 

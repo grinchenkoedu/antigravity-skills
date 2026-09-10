@@ -2,8 +2,6 @@
 name: gku-verify
 model: flash
 description: Check that a change actually works — run the project's tests, then drive the real thing (the command, the page, the function) and confirm the effect, and confirm its guards hold (login, permission, CSRF token, escaping, paths) with one minimal local probe each. Reports a clear verdict, and says honestly what could not be checked and why, instead of quietly skipping it.
-argument-hint: "[<pr-number> | <branch>] [--tests-only] [--report]"
-user-invocable: true
 ---
 
 # /gku-verify — prove it works
@@ -25,6 +23,13 @@ Local only. It never touches a live system and never writes to the pull request.
 - `--report` — write a report file under `.gku/reports/`. Otherwise the verdict stays in chat.
 
 ## Step 1 — Preflight, and be honest about blockers
+
+The branch and the working tree, gathered before this skill ran — read them here rather than
+asking git again. The status is cut at 40 lines, so a long one is a sample, not the whole
+tree — count it with `git status --porcelain | wc -l` if the number matters:
+
+`git branch --show-current 2>/dev/null || true`
+`git status --short 2>/dev/null | head -40 || true`
 
 Read `.gemini/repo-profile.json` (see `gku-reference/repo-profile.md`).
 
