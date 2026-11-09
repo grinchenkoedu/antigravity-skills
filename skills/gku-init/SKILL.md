@@ -215,8 +215,9 @@ With `--dry-run`, print the file and write nothing.
 
 ## Rules
 
-- **Only ever write `GEMINI.md` and a stub `AGENTS.md`.** No source files, no configuration,
-  no commits.
+- **Only ever write `GEMINI.md`, a stub `AGENTS.md`, and, as `gku-reference/repo-profile.md`
+  says, the profile cache `.gemini/repo-profile.json` with its `.gitignore` line.** No source
+  files, no other configuration, no commits.
 - **Never overwrite outside the markers.** An existing hand-written file is asked about, not
   replaced.
 - **Never invent a command.** Detected or `none`, with the reason.
