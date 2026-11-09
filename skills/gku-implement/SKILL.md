@@ -113,6 +113,8 @@ holds:
 
 - the developer asked for TDD, or for a failing test first;
 - the task file or the brief says so;
+- the task file's `**Type:**` is `bug` — the test written first, and seen failing, is what
+  shows it catches the bug rather than only passing beside the fix;
 - the repository requires it — the profile's `standardsDoc` (`GEMINI.md` and friends), a
   `CONTRIBUTING.md`, or a visible convention such as every feature landing with its test in the
   same commit.
@@ -333,13 +335,17 @@ the report that it landed outside the plan.
   become a new plan; they are never appended to a plan that finished.
 - **Data-safety rules are not optional** — see `gku-reference/repo-profile.md`. Anything writing in
   bulk needs dry-run by default, safe re-runs, and bounded scope with an expected row count.
-- **Never `--no-verify`, `--force`, or `--amend`.** A failing hook means fix the code.
+- **What the guard refuses stays refused** — `gku-reference/exec.md` lists it. A refusal is a
+  reason to fix the code, never to find another spelling of the command.
 - **Never weaken or delete an existing test to get to green.** If a test now fails and it is
-  right to change it, say so explicitly and explain why.
+  right to change it, say so in a `Ruling:` in the commit body — that is where `/gku-review`
+  looks for the reason. The same holds for any other check: a suppression, a cast that forces a
+  type the value may not have, or a catch that swallows the error makes it quiet, not right.
 - **Own work, a dependency, or an approved copy** — see `gku-reference/code-provenance.md`.
-- **Identifiers and commit messages in English**; commit bodies may be English or Ukrainian.
-  User-facing strings follow whatever the file already does — a page written in Ukrainian stays
-  Ukrainian.
+- **Identifiers in English; commit subjects and bodies in the developer's language**, with
+  `Ruling:` and `Co-Authored-By:` kept literal (`gku-reference/language.md` — Ukrainian over Russian
+  when the two are mixed). User-facing strings follow whatever the file already does — a page
+  written in Ukrainian stays Ukrainian.
 
 ## Edge cases
 

@@ -41,9 +41,8 @@ follows it.
 
 - `--offline` — no searches, no fetches. Code and local data only; anything that would have
   needed the internet is marked `[unverified: offline]`.
-- `--deep` — allow one sub-agent, on a small fast model, for mechanical sweeping: a code search
-  over a large unfamiliar area, or skimming fetched pages for the passage that matters. Doubles
-  the web caps in step 4.
+- `--deep` — hand the code search over a large unfamiliar area to the `research` subagent
+  (`Model: "flash"`). Doubles the web caps in step 4.
 - `--report` — also write the chat artifact to `.gku/reports/`. Chat is the default.
 
 ## Step 1 — Understand the request
@@ -96,8 +95,10 @@ plugin. The function's signature, the exception it throws, the default it applie
 answers those without a query, for the right version, and a fact read there is
 `[from the code]`.
 
-With `--deep`, the sub-agent may sweep a large unfamiliar area for relevant files. Otherwise
-search yourself — `grep` is faster and costs nothing.
+With `--deep`, dispatch the `research` subagent (`Model: "flash"`) with the terms and the area,
+and wait for its answer: it returns the files and lines; you judge them. Otherwise search
+yourself — `grep` is faster and costs nothing. Skimming a fetched page needs no subagent: read
+and search tools already inspect fetched content directly.
 
 ## Step 3 — Check the local facts
 
@@ -234,6 +235,7 @@ Evidence.
 # <Short title>
 
 **Type:** bug | feature | question | data fix | decision
+**Language:** <ISO 639-1 code — `gku-reference/language.md`>
 **Asked:** <the original request, verbatim>
 **Scope:** <N> files read in full · <M> searches, <K> pages fetched · local data <queried | none>
 
@@ -340,14 +342,16 @@ wants judged, `/gku-audit` when the question turned out to be about the whole re
 - **Data-safety rules apply to any strategy you propose** — see `gku-reference/repo-profile.md`.
 - **Own work, a dependency, or an approved copy** — code from the web is described, never
   pasted (`gku-reference/code-provenance.md`). Recommending a package is the way round.
-- **One sub-agent at most, only with `--deep`**, on a small fast model, for mechanical work.
+- **One sub-agent at most, only with `--deep`**: the `research` subagent (`Model: "flash"`),
+  for the code sweep.
 - **Ask in the chat, not in the result.** A question whose answer changes the result is asked
   before the result is written — batched into one round, each with a recommendation — and the
   answer is written in. Only what nobody in this conversation can answer stays open, and it says
   who could answer it.
-- **Absolute paths. English or Ukrainian. No essays** — a reader of the TL;DR or the summary
-  alone should be able to act. Sources may be in any language; say what they said in the
-  language of the result.
+- **Absolute paths. The developer's language** (`gku-reference/language.md` — Ukrainian over
+  Russian when the two are mixed). **No essays** — a reader of the TL;DR or the summary alone
+  should be able to act. Sources may be in any language; say what they said in the language of
+  the result.
 
 ## Edge cases
 

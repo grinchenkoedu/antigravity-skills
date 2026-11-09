@@ -1,7 +1,7 @@
 ---
 name: gku-review
 model: pro
-description: Review your own changes before you push or open a pull request — a severity-rated list of what to fix, checked against the repository's own conventions, a lint pass over the changed files, its tests, a security pass over the well-known flaws (injection, escaping, login and permission checks, CSRF, secrets, files, outbound requests), and the failure modes that green tests miss. Ends by naming the next step. Review-only; never edits, commits or pushes.
+description: Review your own changes before you push or open a pull request — a severity-rated list of what to fix, which acceptance criteria the diff meets, checked against the repository's own conventions, a lint pass over the changed files, its tests, a security pass over the well-known flaws (injection, escaping, login and permission checks, CSRF, secrets, files, outbound requests), and the failure modes that green tests miss. Ends by naming the next step. Review-only; never edits, commits or pushes.
 ---
 
 # /gku-review — check your own work before anyone else sees it
@@ -15,8 +15,11 @@ Review-only. It never edits your code, never commits, never pushes, never posts 
 
 - `branch` — branch to review. Defaults to the current one.
 - `--target <base>` — what to compare against. Defaults to the profile's base branch.
-- `--deep` — allow one sub-agent to cross-check callers of changed code. Costs more; use it
-  for changes that touch shared code.
+- `--manual` — the branch was built by hand. The task file's `**Mode:** manual` line says the
+  same; this is how you say it when there is no task file, or when this review is dispatched in a
+  fresh context.
+- `--deep` — hand step 5's caller and consumer lookup to the `research` subagent (`Model: "flash"`),
+  to sweep the whole tree. Costs more; use it for changes that touch shared code.
 - `--report` — also write a report file under `.gku/reports/`. By default the review stays in
   the conversation.
 
@@ -81,11 +84,11 @@ file that merely mentions the marker — a plan *about* manual mode, a brief quo
 review that mistakes one of those for a hand-built branch stops recommending the skill the
 developer wanted.
 
-Or take the developer's word for it in the conversation. No match is not proof of the
-opposite: `.tasks/` is git-ignored, so another machine, a deleted plan or the worktree
-`/gku-pr-review` reads has no file to find. Review it as an ordinary branch then — and if the
-diff looks hand-built and you had nothing to check, say so in one line rather than assuming
-either way.
+Or take the developer's word for it: `--manual` in the arguments, or the line the brief that
+dispatched this review carries. No match is not proof of the opposite: `.tasks/` is git-ignored,
+so another machine, a deleted plan or the worktree `/gku-pr-review` reads has no file to find.
+Review it as an ordinary branch then — and if the diff looks hand-built and you had nothing to
+check, say so in one line rather than assuming either way.
 
 Then decide what to read. Do not read everything — rank by risk and read down the list until
 the budget is spent:
@@ -105,6 +108,20 @@ review which files you judged from the diff alone. An honest limit beats a silen
 
 Skip `vendor/`, `node_modules/`, build output, and anything generated.
 
+## Step 2b — The criteria, before the code
+
+When a task file matches the branch, check its acceptance criteria before anything else. A
+diff can be clean, tested and well named and still not do what was asked; that is the miss no
+later step looks for.
+
+For each criterion: **met**, **partly**, **missing** or **not yet** (its step is unticked — a
+branch mid-build is not judged on work nobody has claimed), and the line that shows it — the
+code, the test that asserts it, or the command whose output does. "Met" with no line is
+"partly". A criterion a ticked step claims and the diff does not meet is a WARNING; a BLOCKER
+when the criterion guards data, a permission or the live site.
+
+No task file → say so in one line, and skip it. The commit messages are not criteria.
+
 ## Step 3 — Review against this repository
 
 Open the profile's `standardsDoc` and apply *its* rules. There is no built-in style guide
@@ -113,23 +130,25 @@ file around you does something a particular way, matching it is correct.
 
 Assign every finding one of three severities:
 
-- **BLOCKER** — do not push this. A secret or credential committed; a change that silently
-  loses or corrupts data; a mass write with no bounded scope; a batch script with no dry-run;
-  a data-fix script that duplicates on a second run; a removed or renamed function still
-  called elsewhere; user input reaching SQL, a shell, the filesystem, HTML or a spreadsheet
-  cell unescaped; an entry point with no login or permission check; a record reachable by
-  changing an id; a state change with no CSRF token (the full list, with what counts as proof
-  for each, is in step 3b); a block copied from a codebase under a different licence with no
-  approval on record — the project's own licence, a source declared in the commit or pull
-  request body, or the developer's word when asked settles it; origin unknown is a WARNING
-  (`gku-reference/code-provenance.md`); a Moodle `classes/`, `db/`, cache or task change with
-  **no `version.php` bump** (the live site will not see it).
+- **BLOCKER** — do not push this. A secret or credential committed; a change that silently loses
+  or corrupts data; a mass write with no bounded scope; a batch script with no dry-run; a
+  data-fix script that duplicates on a second run; a removed or renamed function still called
+  elsewhere, or a changed signature with a caller it breaks; user input reaching SQL, a shell,
+  the filesystem, HTML or a spreadsheet cell unescaped; an entry point with no login or
+  permission check; a record reachable by changing an id; a state change with no CSRF token (the
+  full list, with what counts as proof for each, is in step 3b); a block copied from a codebase
+  under a different licence with no approval on record — the project's own licence, a source
+  declared in the commit or pull request body, or the developer's word when asked settles it;
+  origin unknown is a WARNING (`gku-reference/code-provenance.md`); a Moodle `classes/`, `db/`,
+  cache or task change with **no `version.php` bump** (the live site will not see it).
 - **WARNING** — fix before asking for review. New logic with no test; the same block copied a
-  third time; an error path nobody handles; a value that can be null and is not checked; a
-  loop that can run forever on unexpected data; a comment explaining *what* instead of *why*;
-  work that may outlast a page load — a loop over user-scale data, an export, a call to an
-  outside service — run inline in a web request when the project already has a background
-  mechanism.
+  third time; an error path nobody handles; a check silenced instead of satisfied — a new catch
+  that swallows the error, a lint or type suppression, a cast that forces a type the value may
+  not have, a branch taken only under test — unless the line, a `Ruling:` or the message of the
+  commit that made the change says why; a value that can be null and is not checked; a loop
+  that can run forever on unexpected data; a comment explaining *what* instead of *why*; work
+  that may outlast a page load — a loop over user-scale data, an export, a call to an outside
+  service — run inline in a web request when the project already has a background mechanism.
 - **NIT** — optional. Naming, ordering, a clearer way to say the same thing; an optimisation
   that costs readability with no stated reason.
 
@@ -177,6 +196,11 @@ Green tests hide bugs when they are hollow. For every test in the diff, and ever
 change that should have had one:
 
 - **No assertion, or a trivial one** (`assertTrue(true)`) → WARNING.
+- **An existing test edited to pass** — an assertion removed or loosened, an expected value
+  changed to match the new output, a skip marker added, a test deleted → WARNING, unless the
+  reason is on record — a `Ruling:` in a commit or the task file, or the message of the commit
+  that made the edit. Quote the removed line either way: behaviour meant to change is a
+  reason, a red suite is not.
 - **Error paths untested** — the diff adds a throw, a guard, or an error return, and nothing
   asserts that failure → WARNING.
 - **Edges untested** — new inputs with no test for null, empty, zero, one, or duplicate
@@ -241,15 +265,54 @@ a caller the plan listed and the build missed breaks as surely as one nobody lis
 whole tree, skipping what step 2 skips. A name too common to search alone is searched with its
 class or receiver.
 
+## Step 5b — Write the report, when the review needs one
+
+Write a report file **only** with `--report`, or when there is at least one blocker. Decide that
+now, from the findings above — not after step 6, because step 6's answer is the last thing you
+send, and a report left for after it is never written.
+
+Neither applies, or the brief of an unattended `--auto` run says to write no report → skip to
+step 6. Otherwise:
+
+1. Make the directory and check it is ignored, as `gku-reference/reports.md` in this plugin says.
+2. Write the review — what step 6 is about to return, in full — to
+   `.gku/reports/review-<branch-slug>-<timestamp>.md`. Never the repository root.
+3. Keep its absolute path; step 6 ends with it.
+
+A review with a blocker and no report file is unfinished.
+
 ## Step 6 — Say it
 
-Write the review **in the conversation**, not to a file. Lead with the verdict:
+Write the review **in the conversation**, not to a file — and when step 5b wrote a report, end
+with its absolute path on its own line. Lead with the verdict:
 
 > **Ready to push** — or — **2 blockers first** — or — **Ready, with 3 warnings worth a look**
+
+**Its label stays English in every language.** Automated checks and downstream tools read the
+verdict line for the word `blocker` or `Ready`, and a verdict they cannot read is one they do
+nothing about. In another language, open the line with the English label and let the rest follow
+the run's language (`gku-reference/language.md`, rule 4):
+
+> **2 BLOCKERS** — спочатку виправити — or — **Ready** — можна пушити, 3 попередження варто глянути
+
+When step 2b ran, the criteria come next, before any finding — one row each:
+
+| Criterion | Status | Shown by |
+|---|---|---|
+| <the criterion, shortened> | met / partly / missing / not yet | `<path:line>` or the command |
 
 Then, per finding, one bullet: absolute `path:line`, one sentence on the problem, one
 sentence on the fix, and the line of evidence. Group by severity, blockers first. Collapse
 nits into a single short list.
+
+**When a finding is a kind of mistake this repository will make again** — the same defect in a
+second place, or a rule the standards doc does not state and this diff broke — propose one line
+for `.gku/learned.md`, dated, about the repository rather than this change:
+
+> Proposed for `.gku/learned.md`: `<date> — <the rule, in one line>`
+
+Propose it; do not write it. `/gku-fix` records it when it fixes the finding. Most reviews have
+nothing to propose; say nothing then.
 
 Close with one line naming what you checked and did not find problems in — conventions, lint,
 tests, data safety, wiring, **and the security pass by its parts** (injection, escaping,
@@ -277,12 +340,8 @@ it is there if they would rather it were applied for them.
 Suggest it; do not run it. This skill does not edit, and the developer decides whether a finding
 is worth acting on.
 
-Keep it under ~25 lines when clean, ~40 with findings. It is a message to a colleague.
-
-Write a report file **only** with `--report`, or when there is at least one blocker. It goes to
-`.gku/reports/review-<branch-slug>-<timestamp>.md` — never the repository root — per
-`gku-reference/reports.md` in this plugin, which also covers creating the directory and making sure
-it is ignored. Print its absolute path.
+Keep it short. It is a message to a colleague: a clean review is a few lines, and one with
+findings is as long as its findings and no longer.
 
 ## Rules
 
@@ -290,8 +349,9 @@ it is ignored. Print its absolute path.
 - **Absolute paths** everywhere, so they are clickable in an editor.
 - **Never suggest `--no-verify`, `--force`, or `git push --force`.** If a hook fails, the fix
   is the code, not the flag.
-- **Write the review in English or Ukrainian** — match the language the developer is using.
-  Quote code and comments in their original language, whatever that is.
+- **Write the review in the developer's language** (`gku-reference/language.md` — Ukrainian over
+  Russian when the two are mixed). Quote code and comments in their original language, whatever
+  that is. The verdict's label and the severity labels stay English — step 6 says why.
 - **No diff dumps.** One sentence per finding.
 - **The security pass is part of every review.** Not only with a flag, not only for "security
   changes" — a date-formatting fix can still echo a request value unescaped. See step 3b.

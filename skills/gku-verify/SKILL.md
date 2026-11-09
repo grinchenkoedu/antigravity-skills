@@ -1,7 +1,7 @@
 ---
 name: gku-verify
 model: flash
-description: Check that a change actually works — run the project's tests, then drive the real thing (the command, the page, the function) and confirm the effect, and confirm its guards hold (login, permission, CSRF token, escaping, paths) with one minimal local probe each. Reports a clear verdict, and says honestly what could not be checked and why, instead of quietly skipping it.
+description: Check that a change actually works — run the project's tests, then drive the real thing (the command, the page, the function) and confirm the effect, and confirm its guards hold (login, permission, CSRF token, escaping, paths) with one minimal local probe each. Reports a clear verdict, and says honestly what could not be checked and why, instead of quietly skipping it. Read-only; edits no existing file.
 ---
 
 # /gku-verify — prove it works
@@ -232,6 +232,8 @@ plugin. Print its absolute path.
 - **Reversible by default.** When a check must change local data, record the undo before doing
   it, and apply it in step 6.
 - **Evidence or it did not happen.** Every passed row quotes something real.
+- **The developer's language** (`gku-reference/language.md` — Ukrainian over Russian when the two
+  are mixed); quoted output stays as printed.
 - **One failure never cancels the rest of the list.**
 - **Never report tests as passing when there are no tests.** This is the single most common way
   a verification lies.

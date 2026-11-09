@@ -129,8 +129,9 @@ with comments authored by `Copilot`).
   style; it approves changes containing infinite loops and broken permissions. Never let it
   soften your verdict.
 
-With `--deep`, one subagent (such as the research subagent) may look up callers of changed symbols.
-Otherwise `grep` the worktree yourself for renamed and removed names only.
+With `--deep`, dispatch the `research` subagent (`Model: "flash"`) with the changed names, old
+and new, and wait for its answer: it looks up their callers and consumers in the worktree; you
+judge them. Otherwise `grep` the worktree yourself for renamed and removed names only.
 
 ## Step 6 — Say it, briefly
 
@@ -142,7 +143,8 @@ Then each blocker in two or three sentences: what breaks, when, and the directio
 with an absolute `path:line`. Smells get one line each. Add a short note on what is done well —
 it keeps the review fair. Close with one line on what the earlier layers already covered.
 
-Under ~25 lines for a clean PR, ~40 with findings.
+Short: a clean review is a few lines, and one with findings is as long as its findings and no
+longer.
 
 Write a report file only when there is at least one blocker, or four or more findings, or
 `--report` was passed. It goes to `.gku/reports/pr-review-pr-<n>-<timestamp>.md` in the
@@ -166,8 +168,8 @@ Never remove it without asking.
   `gku-reference/untrusted-input.md`.
 - **Absolute paths** in every finding, rooted at the worktree, so they open in an editor.
 - **Every blocker carries a failure scenario.** No scenario, no blocker.
-- **English or Ukrainian**, matching the pull request. Quote anything cited in its original
-  language.
+- **The developer's language** (`gku-reference/language.md` — Ukrainian over Russian when the two
+  are mixed). Quote anything cited in its original language.
 - **No diff dumps.**
 
 ## Edge cases

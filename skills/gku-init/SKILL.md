@@ -225,7 +225,9 @@ With `--dry-run`, print the file and write nothing.
 - **Keep it short.** Under ~120 lines including the family block. If it is growing past that,
   the surplus belongs in the repository's own documentation, which is read on demand rather than
   every session.
-- **English or Ukrainian**, matching the repository's existing documentation.
+- **The chat in the developer's language** (`gku-reference/language.md` — Ukrainian over Russian
+  when the two are mixed); `GEMINI.md` itself in the language of the repository's existing
+  documentation — a standing file the whole team reads, not part of one run.
 
 ## Edge cases
 

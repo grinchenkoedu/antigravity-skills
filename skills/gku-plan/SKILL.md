@@ -32,7 +32,8 @@ Quotes are optional — arguments are not shell-parsed, so the text arrives as t
 They are only useful for marking where prose ends when a flag follows it.
 - `--review` — a brief that already proposes a solution: judge that proposal instead of
   designing a fresh one (see step 7).
-- `--deep` — allow one sub-agent for mechanical code search on a large unfamiliar area.
+- `--deep` — hand mechanical code search over a large unfamiliar area to the `research`
+  subagent (`Model: "flash"`).
 - `--manual` — write the plan for a **person** to build by hand rather than for
   `/gku-implement`: the same investigation, a different file (see step 6b).
   `--manual` must be the first token in the prompt (`/gku-plan --manual <request>`).
@@ -80,9 +81,9 @@ solves this is the best possible outcome: point at it and stop. Look before you 
 
 Read the profile's `standardsDoc` for the conventions the plan must follow.
 
-With `--deep`, one subagent (such as the research subagent) may sweep a large unfamiliar area for
-relevant files. Otherwise search yourself — in a repository this size, `grep` is faster than
-a sub-agent and costs nothing.
+With `--deep`, dispatch the `research` subagent (`Model: "flash"`) with the terms and the area,
+and wait for its answer: it sweeps a large unfamiliar area and returns the files and lines; you
+judge them. Otherwise search yourself — `grep` is faster than a sub-agent and costs nothing.
 
 ## Step 3 — Check the facts
 
@@ -306,8 +307,9 @@ nothing is locked in.
   before the plan is written — batched into one round, each with a recommendation — and the
   answer is written in. Only what nobody in this conversation can answer stays open, and it
   says who could answer it.
-- **Absolute paths. English or Ukrainian. No essays** — a reader of the summary alone should be
-  able to act.
+- **Absolute paths. The developer's language** (`gku-reference/language.md` — Ukrainian over
+  Russian when the two are mixed). **No essays** — a reader of the summary alone should be able
+  to act.
 - **`--manual` writes for a person, and warns them to commit.** Shapes and reasons, never a
   paste-ready implementation; the marker in the header; and the warning that nothing in that
   file commits for them — at the top, at the end of every step, and in the hand-off.
