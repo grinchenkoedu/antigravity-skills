@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Which agent CLIs on this machine can give a review a second opinion — one
+# `name: path` line for each that is installed and that gku knows how to run
+# read-only. Nothing printed means none, which is an answer: the review skills
+# then offer nothing.
+#
+# Only the agents whose read-only command gku-reference/second-opinion.md gives,
+# and a probe proved, are listed — an agent that might write is never offered.
+# agy and gemini are left out on purpose: Antigravity is the host running this
+# skill, so a second opinion comes from a different vendor's agent.
+#
+# Nothing here writes, reaches the network, or checks a login — an agent that is
+# installed but signed out fails on its first run, and the reference says so.
+#
+# Installed to ~/.gemini/skills/bin/gku-agents (or run as bin/gku-agents in the toolkit).
+
+for name in claude copilot opencode; do
+  path="$(command -v "$name" 2>/dev/null)" || continue
+  [ -n "$path" ] && printf '%s: %s\n' "$name" "$path"
+done
+exit 0

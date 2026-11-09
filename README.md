@@ -474,10 +474,10 @@ land without it; a plan that turns out not to reach its goal comes back to you b
 is built differently; everything else is reported at the end and left alone. An implementation
 that wanders is one nobody can review.
 
-**`--auto` runs the whole cycle unattended** — build, review its own diff, fix what that found,
-run the tests, and round again until nothing is left — then pushes the branch and opens the pull
-request. A task big enough to need several branches gets several pull requests, each based on
-the one before it and saying so. It asks everything it needs at the start, in one batch, and
+**`--auto` runs the whole cycle unattended** — build, review the diff in a fresh context, fix what
+that found, run the tests, and round again until nothing is left — then pushes the branch and opens
+the pull request. A task big enough to need several branches gets several pull requests, each based
+on the one before it and saying so. It asks everything it needs at the start, in one batch, and
 after that stops only for something that genuinely needs you: a decision with no defensible
 default, a plan that cannot reach its goal, three rounds with a test still failing. When it does
 stop, the work is committed, pushed and waiting in a draft pull request rather than lost.
@@ -487,8 +487,9 @@ that needs a plan of its own, an assumption it had to make because nobody was th
 each lands in the task file as it comes up and in the pull request description, and the run ends
 by putting that list in front of you *before* it says the plan is done.
 
-**It never merges and it never deploys** — with `--auto` or without it. The open pull request is
-where it ends; merging is yours.
+**It never merges or deploys on its own, and an unattended `--auto` run never merges at all.**
+In `--auto`, the open pull request is where the run ends; in a session you are watching, merging
+happens when you ask for it, and not a moment earlier.
 
 ### `/gku-review` — check your own work
 
@@ -496,20 +497,25 @@ where it ends; merging is yours.
 /gku-review
 /gku-review --deep
 /gku-review --report
+/gku-review --manual
 ```
 
-**The one to use every day.** Run it before you push. It reads your changes, applies your
-repository's own conventions (from `AGENTS.md`, `GEMINI.md` or whatever the project has), and
-gives you a list sorted by severity:
+**The one to use every day.** Run it before you push. When the branch has a task file, it first
+says which **acceptance criteria** the diff meets — met, partly, missing — with the line that
+shows each. Then it applies your repository's own conventions (from `AGENTS.md`, `GEMINI.md` or
+whatever the project has), and gives you a list sorted by severity:
 
 - **BLOCKER** — do not push this. Committed passwords, lost data, a renamed function still
-  called elsewhere, unescaped user input, a Moodle change with no `version.php` bump.
-- **WARNING** — fix before asking for review. Untested logic, an unhandled error path, a loop
-  that can run forever.
+  called elsewhere, a changed signature with a caller it breaks, unescaped user input, a Moodle
+  change with no `version.php` bump.
+- **WARNING** — fix before asking for review. Untested logic, an unhandled error path, a check
+  silenced instead of satisfied, a loop that can run forever.
 - **NIT** — take it or leave it.
 
 It also checks whether your **tests actually prove anything** — a test with no real assertion,
-or one that mocks away the exact thing you changed, passes while proving nothing.
+or one that mocks away the exact thing you changed, passes while proving nothing. It also flags
+an existing test loosened or skipped to get to green, and an error swallowed or a warning
+suppressed instead of fixed.
 
 Every review includes a **security pass** against the well-known flaws — a request value
 reaching SQL, a shell, the filesystem or the page unescaped; an entry point with no login or
@@ -528,8 +534,14 @@ standing between a syntax error and a live site. It will tell you when the linte
 language version than the project targets — passing a PHP 8 parser proves nothing about a
 project that declares `>=7.4`.
 
-`--deep` allows one helper agent to double-check callers of code you renamed. It costs more;
-use it when you have touched shared code.
+It checks **who depends on what changed**: callers of a function you renamed, removed or whose
+signature you changed, and consumers of a contract — a field in serialized output, an API or
+web-service definition, an event, a configuration key or its default, a database column. One it
+cannot see, such as a public API's outside users, is named rather than assumed safe. `--deep`
+hands that sweep to the `research` subagent (`Model: "flash"`) over the whole tree; it costs
+more, so use it when you have touched shared code. A mistake the repository is likely to repeat
+gets a proposed line for `.gku/learned.md`, which `/gku-fix` records when it fixes the finding.
+`--manual` says the branch was built by hand when there is no task file on disk.
 
 It ends by naming the next command — `/gku-fix` when there is something to fix, `/gku-pr` when
 there is not. It never applies anything itself.
@@ -566,15 +578,17 @@ rather than a fix. *A question it could answer by reading more code is not a que
 That is what makes it a reasonable way to **open a fresh session on a bug report**. Nothing
 needs to be in the conversation already:
 
-- **with nothing** — findings from a `/gku-review` earlier in the conversation, or that review
-  run inline if there are none;
+- **with nothing** — findings from a `/gku-review` earlier in the conversation, or a fresh-context
+  review subagent dispatched first if there are none;
 - **with a file** — a report from `.gku/reports/`, or any markdown holding findings;
 - **with a sentence** — investigate it, then fix it.
 
 It is explicit about the difference between a **proven cause** and a **hypothesis**, and it says
 which one it acted on. When it reproduced the symptom, it re-runs that same reproduction after
 the fix — a green test suite does not prove your bug is gone; the thing that used to fail no
-longer failing does.
+longer failing does. When a test can show the bug, it writes that test **before** the fix and
+watches it fail for the bug's own reason — a test written after a fix passes whether or not it
+would have caught anything — and the report quotes the failing line beside the passing one.
 
 **It re-checks every finding against the code before editing anything**, including findings it
 produced itself a minute ago. Findings go stale: the file moved, somebody already fixed it, or
@@ -624,9 +638,9 @@ reads from your recent merged pull requests. The testing section says what was a
 **admits it when nothing was**. Updating an existing pull request never silently overwrites a
 description somebody wrote by hand.
 
-On a public repository the description carries no Antigravity session link. Such a link opens
-only for the account that owns it; to everyone else it is a dead link that says which tool wrote
-the change. The co-author trailer in the commits is the attribution, and it stays.
+The description carries no session link unless you ask for one. Such a link opens only for the
+account that owns it; to everyone else it is a dead link that says which tool wrote the change.
+The co-author trailer in the commits is the attribution, and it stays.
 
 ### `/gku-pr-review` — review someone else's pull request
 
@@ -771,17 +785,27 @@ instead:
 - **A guard on dangerous git and gh actions.** The guard utility (`bin/gku-guard`) enforces safety
   rules via Antigravity `PreToolUse` lifecycle hooks (`hooks.json`) or CLI invocations. It reads
   the command about to execute and refuses `--force`, `--force-with-lease`, `--no-verify`,
-  `git commit --amend`, and a push to the base branch — including the spellings that hide one:
-  `+main`, `HEAD:refs/heads/main`. Talk about a flag in a commit message is not use of it. It
-  refuses the commands that end or ship a change rather than propose one, too — `gh pr merge`,
-  `gh pr review --approve`, `gh release`, `gh workflow run`, and the `gh api` call that merges —
-  so a skill allowed to push and open a pull request still stops there. `gh pr ready` is
-  deliberately allowed: `/gku-pr` offers it when the work behind a draft is finished.
+  `git commit --amend`, `gh pr review --approve`, and a push to the base branch — including the
+  spellings that hide one: `+main`, `HEAD:refs/heads/main`. Talk about a flag in a commit message
+  is not use of it. In an unattended run, `/gku-implement --auto` writes `.gku/auto-run` for as
+  long as it runs, and while that file is there `gh pr merge`, `gh release`, `gh workflow run`
+  and the `gh api` call that merges are all refused. In a session you are watching, a merge you
+  ask for is yours to ask for and the guard stays out of it. `gh pr ready` is allowed either way:
+  `/gku-pr` offers it when the work behind a draft is finished.
+- **A second opinion from another agent, when you want one.** `bin/gku-agents` lists the agent
+  CLIs installed here that gku can run read-only — `claude`, `copilot` and `opencode`. When it
+  finds one, `/gku-review` and `/gku-pr-review` end by offering it in one dialog (`ask_question`
+  with `None` as an option). Each agent picked reads the same diff in a read-only mode a probe
+  proved; your code goes to that agent's vendor, which is why it is asked, never assumed — and
+  while the run lasts the diff sits in the agent's command line, where any account on your
+  machine can read it. `gku-reference/second-opinion.md` checks every finding it returns against
+  the code before reporting it. It is never offered under `--auto`, or when the review found a
+  committed secret.
 - **Frontmatter that matches the descriptions.** The skills define explicit model preferences
-  (`pro` for `/gku-plan`, `/gku-review`, `/gku-audit`, `/gku-research` where deep reasoning is
-  paramount) and clear descriptions so the user and agent select the right tool for the job.
-  The skills that promise to read never change existing code: they may write a task file or a
-  report, and never edit files already present.
+  (`pro` for `/gku-plan`, `/gku-review`, `/gku-audit`, `/gku-research`, `/gku-pr-review` where
+  deep reasoning is paramount) and clear descriptions so the user and agent select the right tool
+  for the job. The skills that promise to read never change existing code: they may write a task
+  file or a report, and never edit files already present.
 - **Facts arrive as data.** `bin/gku-survey` gathers every marker the profile detection needs in
   one read-only pass, and the skills that inspect the tree check branch and working status before
   spending tool calls asking git repeatedly. A Docker daemon that hangs costs five seconds, not the
@@ -798,6 +822,11 @@ instead:
 - **Every planned step names its files.** `Create:`, `Modify: path:lines (symbol)`, `Test:` — so
   `/gku-implement` opens exactly those files instead of searching, and `/gku-review` greps them for
   symbols that moved.
+- **Your language, from the plan to the pull request.** Write in Ukrainian, Polish or anything
+  else, and the questions, the plan, the commits and the pull request come back in it; mix
+  Ukrainian and Russian and Ukrainian wins. What the skills read back — headings, `Modify:`,
+  `Ruling:`, identifiers — stays English. A `**Language:**` line in the task file carries the
+  choice to a later session. One rule, in `gku-reference/language.md`.
 
 ## Model Selection
 
@@ -838,9 +867,9 @@ Check `gh auth status`. For a private repository you need access, and the token 
 `repo` scope. Re-authenticate with `gh auth login --scopes "repo,read:org"`.
 
 **A skill got the test command wrong.**
-It caches what it detected. Delete `.gemini/repo-profile.json` and run again, or pass
-`--reprofile`. If the project's real command lives somewhere unusual, put it in the
-repository's `AGENTS.md` — the skills read that file.
+It caches what it detected. Delete `.gemini/repo-profile.json` and run again. If the project's
+real command lives somewhere unusual, put it in the repository's `AGENTS.md` — the skills read
+that file.
 
 **`/gku-implement` refuses to start.**
 Usually uncommitted changes it did not make. Commit or stash them first — it will not build on

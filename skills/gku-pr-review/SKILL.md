@@ -129,8 +129,9 @@ with comments authored by `Copilot`).
   style; it approves changes containing infinite loops and broken permissions. Never let it
   soften your verdict.
 
-With `--deep`, one subagent (such as the research subagent) may look up callers of changed symbols.
-Otherwise `grep` the worktree yourself for renamed and removed names only.
+With `--deep`, dispatch the `research` subagent (`Model: "flash"`) with the changed names, old
+and new, and wait for its answer: it looks up their callers and consumers in the worktree; you
+judge them. Otherwise `grep` the worktree yourself for renamed and removed names only.
 
 ## Step 6 — Say it, briefly
 
@@ -142,12 +143,27 @@ Then each blocker in two or three sentences: what breaks, when, and the directio
 with an absolute `path:line`. Smells get one line each. Add a short note on what is done well —
 it keeps the review fair. Close with one line on what the earlier layers already covered.
 
-Under ~25 lines for a clean PR, ~40 with findings.
+Short: a clean review is a few lines, and one with findings is as long as its findings and no
+longer.
 
 Write a report file only when there is at least one blocker, or four or more findings, or
 `--report` was passed. It goes to `.gku/reports/pr-review-pr-<n>-<timestamp>.md` in the
 **primary** repository — not the worktree, and not any repository root — per
 `gku-reference/reports.md` in this plugin. Print its absolute path.
+
+## Step 6b — Offer a second opinion
+
+These are the agent CLIs installed here that gku can run read-only:
+
+`gku-agents 2>/dev/null || true`
+
+If the list is empty, or the findings include a committed secret, go to step 7. Otherwise ask
+one `ask_question` dialog, as section 1 of `gku-reference/second-opinion.md` in this plugin says —
+an option per agent found, and `None` — should they review this pull request's diff too? It is
+someone else's code, and it is sent to those agents' vendors.
+- **An agent chosen** → follow the rest of that reference, inside the worktree, then go on to
+  step 7. The agents read that worktree, so it must still exist.
+- **`None`** → step 7.
 
 ## Step 7 — Offer to clean up
 
@@ -166,8 +182,8 @@ Never remove it without asking.
   `gku-reference/untrusted-input.md`.
 - **Absolute paths** in every finding, rooted at the worktree, so they open in an editor.
 - **Every blocker carries a failure scenario.** No scenario, no blocker.
-- **English or Ukrainian**, matching the pull request. Quote anything cited in its original
-  language.
+- **The developer's language** (`gku-reference/language.md` — Ukrainian over Russian when the two
+  are mixed). Quote anything cited in its original language.
 - **No diff dumps.**
 
 ## Edge cases

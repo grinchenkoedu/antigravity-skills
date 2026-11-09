@@ -215,8 +215,9 @@ With `--dry-run`, print the file and write nothing.
 
 ## Rules
 
-- **Only ever write `GEMINI.md` and a stub `AGENTS.md`.** No source files, no configuration,
-  no commits.
+- **Only ever write `GEMINI.md`, a stub `AGENTS.md`, and, as `gku-reference/repo-profile.md`
+  says, the profile cache `.gemini/repo-profile.json` with its `.gitignore` line.** No source
+  files, no other configuration, no commits.
 - **Never overwrite outside the markers.** An existing hand-written file is asked about, not
   replaced.
 - **Never invent a command.** Detected or `none`, with the reason.
@@ -224,7 +225,9 @@ With `--dry-run`, print the file and write nothing.
 - **Keep it short.** Under ~120 lines including the family block. If it is growing past that,
   the surplus belongs in the repository's own documentation, which is read on demand rather than
   every session.
-- **English or Ukrainian**, matching the repository's existing documentation.
+- **The chat in the developer's language** (`gku-reference/language.md` — Ukrainian over Russian
+  when the two are mixed); `GEMINI.md` itself in the language of the repository's existing
+  documentation — a standing file the whole team reads, not part of one run.
 
 ## Edge cases
 

@@ -7,42 +7,54 @@
 # 2. Claude Code PreToolUse hooks and standalone shell calls:
 #    Reads JSON or command on stdin, exits 2 with reason on stderr when refused, 0 when allowed.
 #
-# Refuses the four things forbidden by gku rules in prose:
+# Refuses what the guard section in gku-reference/exec.md lists for /gku-implement,
+# /gku-fix, /gku-pr and /gku-pr-resolve:
 #   git push --force / --force-with-lease / -f
 #   git commit --amend
 #   --no-verify on any git command
 #   git push to the base branch (main, master, or the profile's baseBranch)
-# and the gh commands that end or ship a change rather than propose one:
-#   gh pr merge, gh pr review --approve, gh release, gh workflow run,
-#   gh api ... /merge
+#   gh pr review --approve — the run that wrote a change is not its reviewer
+# and, while an unattended run is in progress (.gku/auto-run), the commands that
+# end or ship a change rather than propose one:
+#   gh pr merge, gh release, gh workflow run, gh api ... /merge
 
 input="$(cat)"
+
+has_jq=""
+command -v jq >/dev/null 2>&1 && has_jq=1
+
+# The sed fallback takes -E, because BSD sed has no \| alternation in a basic
+# regex and would silently extract nothing — a guard that refuses nothing.
+field() { # field <key> <jq path> — that JSON string value, jq where there is jq
+  if [ -n "$has_jq" ]; then
+    printf '%s' "$input" | jq -r "$2 // empty" 2>/dev/null
+  else
+    printf '%s' "$input" | sed -E -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' | head -1
+  fi
+}
 
 is_antigravity=0
 cmd=""
 hook_cwd=""
 
-if command -v jq >/dev/null 2>&1; then
-  # Check if Antigravity PreToolUse payload
+if [ -n "$has_jq" ]; then
   agy_cmd="$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // empty' 2>/dev/null)"
   if [ -n "$agy_cmd" ]; then
     is_antigravity=1
     cmd="$agy_cmd"
     hook_cwd="$(printf '%s' "$input" | jq -r '.workspacePaths[0] // .cwd // empty' 2>/dev/null)"
   else
-    claude_cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
-    if [ -n "$claude_cmd" ]; then
-      cmd="$claude_cmd"
-      hook_cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)"
-    fi
+    cmd="$(field command '.tool_input.command')"
+    hook_cwd="$(field cwd '.cwd')"
   fi
 else
-  # -E, because BSD sed has no \| alternation in a basic regex
   if printf '%s' "$input" | grep -q '"toolCall"'; then
     is_antigravity=1
-    cmd="$(printf '%s' "$input" | sed -E -n 's/.*"CommandLine"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' | head -1)"
+    cmd="$(field CommandLine '.toolCall.args.CommandLine')"
+    hook_cwd="$(field cwd '.cwd')"
   else
-    cmd="$(printf '%s' "$input" | sed -E -n 's/.*"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' | head -1)"
+    cmd="$(field command '.tool_input.command')"
+    hook_cwd="$(field cwd '.cwd')"
   fi
 fi
 
@@ -65,7 +77,6 @@ allow() {
 refuse() {
   local reason="$1"
   if [ "$is_antigravity" -eq 1 ]; then
-    # JSON-encode reason string
     local escaped
     escaped="$(printf '%s' "$reason" | sed 's/\\/\\\\/g; s/"/\\"/g')"
     printf '{"decision":"deny","reason":"The gku guard refuses: %s"}\n' "$escaped"
@@ -95,26 +106,42 @@ if printf '%s' "$scan" | grep -Eq 'git[^|;&]*--no-verify'; then
   refuse "--no-verify skips a hook. A failing hook means the code needs fixing."
 fi
 
-# Merging and shipping are where every skill here stops, including a run given
-# --auto, which pushes and opens a pull request with nobody watching.
-if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*pr[^|;&]*[[:space:]]merge([[:space:]]|$)'; then
-  refuse "merging is where this stops. Open or update the pull request; a person merges it."
-fi
+# Approving is refused in either mode, because no marker makes it sound: the run
+# that wrote the change would be signing off its own work.
 if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*pr[^|;&]*[[:space:]]--approve([[:space:]]|$)'; then
   refuse "approving is a reviewer's act. A run that wrote the change cannot also approve it."
 fi
-if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*release[[:space:]]+(create|edit|delete|upload)([[:space:]]|$)'; then
-  refuse "a release ships to users. That is a decision a person makes, after the merge."
+
+# Merging and shipping are where an unattended run stops. The word has to end
+# where it is matched, so --json mergeable stays a question and `gh pr merge`
+# is a merge.
+ship=""
+if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*pr[^|;&]*[[:space:]]merge([[:space:]]|$)'; then
+  ship="merging ends a change"
+elif printf '%s' "$scan" | grep -Eq 'gh[^|;&]*release[[:space:]]+(create|edit|delete|upload)([[:space:]]|$)'; then
+  ship="a release ships to users"
+elif printf '%s' "$scan" | grep -Eq 'gh[^|;&]*workflow[[:space:]]+(run|enable|disable)([[:space:]]|$)'; then
+  ship="running a workflow reaches CI and whatever it deploys"
+elif printf '%s' "$scan" | grep -Eq 'gh[^|;&]*api[^|;&]*/merge'; then
+  ship="that API call merges"
 fi
-if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*workflow[[:space:]]+(run|enable|disable)([[:space:]]|$)'; then
-  refuse "running a workflow reaches CI and whatever it deploys. Ask before triggering it."
-fi
-if printf '%s' "$scan" | grep -Eq 'gh[^|;&]*api[^|;&]*/merge'; then
-  refuse "that API call merges. Opening the pull request is where this stops."
+if [ -n "$ship" ]; then
+  # The marker sits at the root of the primary repository, or in the session's
+  # directory when that is not a checkout. --git-common-dir, not
+  # --show-toplevel: in a worktree the latter is the worktree's own root, and
+  # the run that wrote the marker used the primary one (gku-reference/reports.md).
+  dir="${hook_cwd:-$PWD}"
+  root=""
+  common="$(cd "$dir" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/null)"
+  [ -n "$common" ] && root="$(cd "$dir" && cd "$common/.." 2>/dev/null && pwd)"
+  marker="${root:-$dir}/.gku/auto-run"
+  if [ -f "$marker" ]; then
+    refuse "$ship, and nobody is watching this run — $marker says it is unattended. Opening the pull request is where it stops; if that run is over, remove that file."
+  fi
 fi
 
 base=""
-if command -v jq >/dev/null 2>&1; then
+if [ -n "$has_jq" ]; then
   profile=""
   if [ -f "${hook_cwd:+$hook_cwd/}.gemini/repo-profile.json" ]; then
     profile="${hook_cwd:+$hook_cwd/}.gemini/repo-profile.json"

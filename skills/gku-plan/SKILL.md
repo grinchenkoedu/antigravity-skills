@@ -32,7 +32,8 @@ Quotes are optional — arguments are not shell-parsed, so the text arrives as t
 They are only useful for marking where prose ends when a flag follows it.
 - `--review` — a brief that already proposes a solution: judge that proposal instead of
   designing a fresh one (see step 7).
-- `--deep` — allow one sub-agent for mechanical code search on a large unfamiliar area.
+- `--deep` — hand mechanical code search over a large unfamiliar area to the `research`
+  subagent (`Model: "flash"`).
 - `--manual` — write the plan for a **person** to build by hand rather than for
   `/gku-implement`: the same investigation, a different file (see step 6b).
   `--manual` must be the first token in the prompt (`/gku-plan --manual <request>`).
@@ -80,9 +81,9 @@ solves this is the best possible outcome: point at it and stop. Look before you 
 
 Read the profile's `standardsDoc` for the conventions the plan must follow.
 
-With `--deep`, one subagent (such as the research subagent) may sweep a large unfamiliar area for
-relevant files. Otherwise search yourself — in a repository this size, `grep` is faster than
-a sub-agent and costs nothing.
+With `--deep`, dispatch the `research` subagent (`Model: "flash"`) with the terms and the area,
+and wait for its answer: it sweeps a large unfamiliar area and returns the files and lines; you
+judge them. Otherwise search yourself — `grep` is faster than a sub-agent and costs nothing.
 
 ## Step 3 — Check the facts
 
@@ -187,6 +188,7 @@ project deliberately commits briefs). Overwrite an existing plan for the same sl
 # <Short title>
 
 **Type:** bug | feature | question | data fix
+**Language:** <ISO 639-1 code — `gku-reference/language.md`>
 **Asked:** <the original request, verbatim>
 
 ## Summary
@@ -228,7 +230,15 @@ one exists (`classes/export/Csv.php:120-140 (buildRow)`); the symbol is what a r
 for when the numbers have moved.
 `/gku-implement` opens exactly those files, and `/gku-review` greps the `Modify:` paths for
 symbols that moved. A step you cannot write those lines for is not one step — split it, or say
-plainly which paths you could not name and why.
+plainly which paths you could not name and why. A step that changes a signature something else
+calls lists those callers under `Modify:` too, found by `grep` now, names in strings and hooks
+included: they change in the same step, or the step leaves the branch broken.
+
+**Order the steps so each one leaves something that runs.** Prefer a thin path end to end
+first, then widen it, over every layer of one kind before the next — built layer by layer,
+nothing can be checked until the last step lands, and every step before it is proved only by
+its own unit test. A change that is one layer to begin with, a migration or a rename, keeps its
+obvious order.
 
 Omit acceptance criteria and steps for a pure question — the answer is the deliverable.
 
@@ -239,113 +249,10 @@ The word `manual` without `--` is never the flag (e.g. "user manual", "manual sy
 Mentions of `--manual` later in the sentence (e.g. "add a --manual flag to the CLI") describe what to
 build, not how to plan.
 
-`--manual` changes nothing above this line. Steps 1–5 run exactly as written — the
-classification, the code reading, the fact-checking with source tags, the batched question
-round — a plan somebody follows by hand is worth only as much as the evidence under it.
-What changes is the file that comes out of step 6.
-
-It is written for two readers who are not `/gku-implement`: a developer in a repository where
-the code has to be written by a person, and a developer learning this codebase. Both need the
-*why* beside the *what*, and neither needs a block to paste.
-
-**Shapes, never paste-ready code.** A step names the file, the symbol, the signature and the
-code already in this repository to mirror — and says why it is shaped that way. It does not
-carry an implementation to paste in whole. Two reasons: a paste-ready plan is generated code
-with one extra hop, which is exactly what a repository that bans generated code is avoiding;
-and a learner who pastes has learned nothing. A genuinely non-obvious fragment — a regex, a
-query predicate, an escaping call — may appear inside a `Shape:` line as an example, marked as
-one.
-
-**Detail aimed at someone who has not read the code.** Each step says where to open the file,
-what is already there, what to add, and what the surrounding code expects of it. That is more
-prose than an `/gku-implement` step needs, and it is the point of the mode. Still one step, one
-commit: if a step cannot be proved on its own, it is two steps.
-
-**Nothing here commits.** Say so at the top of the file and again at the end of every step. A
-finished step that was never committed gets tangled into the next one, and the whole recovery
-story of this mode is that the last commit is a state to get back to.
-
-**The file is the session's memory.** A manual build spans days, compactions and fresh
-sessions, and nothing but this file survives them: it therefore carries the request verbatim,
-the questions with their answers, the progress so far, and the prompt to reopen it with.
-
-### The file
-
-Same location and slug rules as step 6. The header marker is what `/gku-implement` and
-`/gku-review` read, so it goes in exactly this form:
-
-````markdown
-# <Short title>
-
-**Type:** bug | feature | question | data fix
-**Mode:** manual
-**Asked:** <the original request, verbatim>
-**Plan file:** <absolute path to this file>
-
-> **You are building this by hand.** Nothing in this file writes code for you and nothing
-> commits for you: finish a step, check it, **commit it yourself**, then start the next one.
-
-## Summary
-<Three bullets at most. The finding, what to do, and the biggest risk.>
-
-## <Cause | Design | Answer | Strategy>
-<As in step 6 — and, for a learner, what the surrounding code does today, so the change has
-somewhere to sit.>
-
-## Acceptance criteria
-- [ ] <checkable, specific — what you are building against>
-
-## Steps
-1. <what the step does, in one line>
-   - Create: <paths this step adds>
-   - Modify: <path:lines this step changes — name the symbol too>
-   - Shape: <the signature and structure to write, and the code here to mirror>
-   - Why: <what breaks if it is shaped differently>
-   - Prove it: `<the exact command>` — expect <the observable result>
-   - Then commit this step yourself.
-
-## How to check it
-- `<the exact command from this project that proves the whole thing works>`
-
-## Do not touch
-- <files, tables or behaviour that must stay as they are, and why>
-
-## Progress
-<Tick a step when its commit exists. This is where a new session finds you.>
-- [ ] 1. <step title> — commit:
-- [ ] 2. <step title> — commit:
-
-## Q&A
-<Every question that shaped this plan, and every one settled later. Newest last.>
-- **<date> — <the question>** — <the answer, in the words it was given> `[answered]`
-
-## Resume prompt
-<Paste this into a new session after a compaction, or tomorrow.>
-
-```
-Read <absolute path to this file> — a manual plan I am building by hand.
-Check ## Progress for where I am, then help me with the first unticked step.
-Explain and review; do not write the code for me, and do not commit anything.
-Append anything we settle to ## Q&A with today's date.
-```
-
-## Evidence
-- **Code:** <path — one line on why it matters>
-- **Data:** <fact — [source tag]>
-- **Still open:** <only what nobody here could answer — who can, and what was assumed>
-````
-
-`Create:` and `Modify:` stay in the step for the same reason they exist in step 6 —
-`/gku-review` greps them for symbols that moved, and it reviews hand-written code exactly as it
-reviews built code. `## Q&A` is where the step 5 answers go in this mode; `## Evidence` keeps
-the code and data lines.
-
-### Handing it over
-
-The hand-off (step 8) does **not** offer `/gku-implement`: that skill would build what the file
-was written for the developer to build. Give them the path, the step count, the commit warning
-and `/gku-review` for when the work is done — and say that `/gku-implement` will ask before
-touching a manual plan, so the file is not a trap if they change their mind.
+**With `--manual`, read `manual.md` beside this file before step 6.** It holds the rest of the
+mode: why it writes shapes rather than code to paste, the `**Mode:** manual` header and the
+template's `Progress` / `Q&A` / `Resume prompt` sections, and why the hand-off points to
+`/gku-review` instead of `/gku-implement`. Without the flag, skip it — none of it applies.
 
 ## Step 7 — Judging an existing proposal (`--review`)
 
@@ -400,8 +307,9 @@ nothing is locked in.
   before the plan is written — batched into one round, each with a recommendation — and the
   answer is written in. Only what nobody in this conversation can answer stays open, and it
   says who could answer it.
-- **Absolute paths. English or Ukrainian. No essays** — a reader of the summary alone should be
-  able to act.
+- **Absolute paths. The developer's language** (`gku-reference/language.md` — Ukrainian over
+  Russian when the two are mixed). **No essays** — a reader of the summary alone should be able
+  to act.
 - **`--manual` writes for a person, and warns them to commit.** Shapes and reasons, never a
   paste-ready implementation; the marker in the header; and the warning that nothing in that
   file commits for them — at the top, at the end of every step, and in the hand-off.

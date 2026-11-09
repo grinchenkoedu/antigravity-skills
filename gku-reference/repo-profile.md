@@ -9,9 +9,10 @@ every invocation is the single most wasteful thing these skills could do — so 
 
 `.gemini/repo-profile.json` at the repository root.
 
-**Always read the cache first.** Only run detection when the file is missing, or when the
-user passes `--reprofile`, or when a command in it demonstrably no longer works (e.g. the
-test command errors with "not found"). After detection, write the file.
+**Always read the cache first.** Only run detection when the file is missing, or when a
+command in it demonstrably no longer works (e.g. the test command errors with "not found").
+To re-detect on purpose, delete the file and run any skill again. After detection, write the
+file.
 
 Add `.gemini/repo-profile.json` to `.gitignore` if it is not already covered — it describes
 one developer's machine, not the project.
@@ -102,11 +103,21 @@ Stop as soon as the family is clear. This should be a handful of file checks, no
 |---|---|---|
 | `version.php` with `$plugin->component` + `db/`, `lang/` | `moodle-plugin` | Code cannot run standalone; it needs a Moodle install around it |
 | `wp-content/`, a `style.css` theme header, `functions.php`, or a CMS dependency | `cms` | Built on a core you do not own; the update path is also the security path |
-| `composer.json` **and** `application/core/` + `run` | `php-app` | In-house MVC app; `./run` is the CLI entry point |
-| `composer.json` with `type: library` / only `src/` + `tests/` | `php-library` | Importable package, tests are the whole runtime surface |
+| `composer.json` that does not say `type: library`, **and** one of: `artisan`, `bin/console`, `application/core/` + `run`, or `type: project` | `php-app` | A PHP application — Laravel, Symfony, the in-house MVC layout, or a front-controller app; a CLI found is its entry point, `public/index.php` its HTTP front controller |
+| `composer.json` with `type: library` or with no `type` at all — `library` is Composer's default — or only `src/` + `tests/` | `php-library` | Importable package, tests are the whole runtime surface |
 | `requirements.txt` / `pyproject.toml` | `python-app` | |
 | `package.json` with no PHP | `node` | |
 | none of the above | `other` | Say so plainly; skills degrade rather than guess |
+
+The rows are checked in this order, and the first that holds wins: a Symfony application has
+`src/` and `tests/` like a library, and only its entry point, read first, keeps it out of
+`php-library`. The survey's `php-app` row lists the files; `type: project` comes from its
+`composer-type` row, which is empty when `composer.json` has no `type`. A bare root `index.php`
+is not a marker on purpose — Moodle core, WordPress core and a library's demo page all carry
+one, and each would be handed PHP rules that fight its own. Nor is `public/index.php` on its
+own: the applications above share it, so the row lists it, but a library with no `type` can
+carry one as a demo page, and without a CLI or `type: project` beside it the repository is a
+library.
 
 4. **Execution environment — decide this before the commands themselves.** See
    "Run things in a container" below. In precedence order:
@@ -220,9 +231,11 @@ Stop as soon as the family is clear. This should be a handful of file checks, no
   caches or tasks, or touching `amd/src/`, `styles.css` or `lang/` requires bumping
   `$plugin->version` in `version.php` or the live site will not see it. This is the single most
   common way a correct-looking change fails in production — treat a missing bump as a blocker.
-- **`php-app`** — `application/` holds `controllers/`, `models/`, `views/`, `commands/`,
-  `core/`. `./run` dispatches CLI commands. Several of these repositories have **no tests at
-  all**; skills must not report "tests pass" when what happened is "there are no tests".
+- **`php-app`** — its entry point is the CLI the marker found: `./run` with `application/`
+  (`controllers/`, `models/`, `views/`, `commands/`, `core/`), `php artisan` with `app/`, or
+  `bin/console` with `src/`; a front-controller app has `public/index.php` over HTTP instead.
+  A repository of this family may have **no tests at all**; skills must not report "tests
+  pass" when what happened is "there are no tests".
 - **`php-library`** — CI already runs the suite on every push. The tests are the contract.
 
 ## Run things in a container
@@ -233,12 +246,12 @@ unavailable, and say so when you do.
 
 The reason is correctness before convenience:
 
-- **Version fidelity.** These projects target specific runtimes — a plugin written for PHP 7.4
+- **Version fidelity.** A project targets a specific runtime — a plugin written for PHP 7.4
   linted by a host PHP 8.4 will happily accept syntax that breaks in production, and a suite
   that passes on the host's version proves nothing about the version that actually runs. The
   container has the right one.
-- **The toolchain is in the image.** No local `php`, `composer`, `pytest` or `node` needed.
-  Several of these repositories are explicit that the host has no PHP at all.
+- **The toolchain is in the image.** No local `php`, `composer`, `pytest` or `node` needed;
+  a host may have no PHP at all.
 - **Same commands everywhere.** One recipe for macOS, Linux, WSL and Windows. Most of what
   makes Windows awkward — a missing `make`, a different `timeout`, absent Unix utilities —
   stops being a special case when the command runs in Linux inside a container.
@@ -305,8 +318,9 @@ Each of these missing, in code that writes to the database, is a blocker — not
 These skills are built to be run often on a modest plan, so every one of them obeys the same
 limits. If you are extending a skill, keep them.
 
-- **No sub-agents by default.** At most one, only behind an explicit `--deep` flag, and pinned
-  to a small fast model since its job is mechanical scanning.
+- **No sub-agents by default.** At most one at a time: the `research` subagent (pinned to
+  `flash`) only behind an explicit `--deep` flag for mechanical scanning, or a fresh-context
+  review subagent (pinned to `pro`) in `/gku-implement --auto` and cold `/gku-fix`.
 - **Never spawn background agent fleets or workflow runs.** A single session does the work.
 - **Read the diff, not the repository.** Full-file reads are capped at the five highest-risk
   files; everything else is judged from the diff. `/gku-audit` is the one exception — it has no

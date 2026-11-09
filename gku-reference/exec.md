@@ -52,3 +52,10 @@ of this.
 `/gku-verify <n>` and `/gku-pr-resolve` run a test or lint command over a tree the developer did
 not write. In a container the blast radius is the container; on `exec.kind: host` it is the
 developer's machine and credentials — say so and ask first (`gku-reference/untrusted-input.md`).
+
+## The guard
+
+`bin/gku-guard` guards git and gh commands for `/gku-implement`, `/gku-fix`, `/gku-pr` and
+`/gku-pr-resolve`. It refuses a forced push, `--amend`, `--no-verify`, a push to the base
+branch and approving a pull request; under `.gku/auto-run`, anything that merges or ships. A
+refusal means the code needs fixing — never reword the command around it.
