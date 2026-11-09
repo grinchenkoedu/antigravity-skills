@@ -6,9 +6,10 @@
 # Three skills write plans and two read them. The lists are only worth writing
 # because something reads them: /gku-implement opens the Modify: paths instead of
 # searching the repository, and /gku-review greps them for symbols that moved. If
-# either half goes, the lists become decoration in a file nobody re-reads.
+# either half goes, the lists become decoration in a file nobody re-reads. One
+# rule about what goes in them rides along: the callers of a changed signature.
 #
-# Exits 0 when both halves hold, 1 otherwise.
+# Exits 0 when all of it holds, 1 otherwise.
 
 set -u
 
@@ -37,8 +38,27 @@ done
 flat "$skills/gku-implement/SKILL.md" | grep -q 'Modify: paths first' || note 'implement: does not start from the step Modify: paths'
 flat "$skills/gku-review/SKILL.md" | grep -q 'Modify: paths' || note 'review: does not narrow the symbol grep to the steps Modify: paths'
 
+# A changed signature: plan puts its callers in the same step's Modify: list, and
+# review greps for callers still written for the old one. Without both, the change
+# lands in one step and its callers break in another.
+plf="$(flat "$skills/gku-plan/SKILL.md")"
+printf '%s' "$plf" | grep -q 'lists those callers under Modify:' || note 'plan: a step that changes a signature does not list its callers'
+revf="$(flat "$skills/gku-review/SKILL.md")"
+printf '%s' "$revf" | grep -q 'every one whose signature changed' &&
+  printf '%s' "$revf" | grep -q 'for what is renamed, removed or changed only' ||
+  note 'review: the caller grep skips symbols whose signature changed'
+printf '%s' "$revf" | grep -q 'with the list of names, old and new' &&
+  printf '%s' "$revf" | grep -q 'returns the hits; you judge them' ||
+  note 'review: the --deep subagent decides which callers break, or is not given the names'
+printf '%s' "$revf" | grep -q 'grep the whole tree' ||
+  note 'review: a changed signature is grepped in Modify: paths only, where the plan already fixed the callers'
+printf '%s' "$revf" | grep -q 'skipping what step 2 skips' ||
+  note 'review: the whole-tree grep reads vendor/ and build output'
+printf '%s' "$revf" | grep -q 'searched with its class or receiver' ||
+  note 'review: a common name is grepped alone, burying its callers in unrelated hits'
+
 if [ "$fails" -eq 0 ]; then
-  printf 'file-lists: the three planners write them, implement and review read them\n'
+  printf 'file-lists: the three planners write them, implement and review read them; callers of a changed signature included\n'
 else
   printf 'file-lists: %s problem(s)\n' "$fails" >&2
 fi

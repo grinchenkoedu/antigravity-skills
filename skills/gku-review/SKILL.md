@@ -210,18 +210,36 @@ found here costs a minute; found in production it costs a white page.
 - No `lint` command, or `exec` fell back to a host without the toolchain → skip it and say the
   review is unlinted. Never report a lint that did not run.
 
-## Step 5 — Cross-check (only with `--deep`)
+## Step 5 — Who else depends on what changed
 
-One sub-agent, on a small fast model, doing mechanical lookup only: for each function, class
-or method the diff renamed, moved or removed, find everything that still refers to the old
-name. Anything it finds is a BLOCKER.
+A change that passes every test here can still break whoever reads what it produces. Two kinds
+of dependant, both checked:
 
-Without `--deep`, do this yourself with `grep` for the *renamed and removed* symbols only —
-that is the case where a missed caller breaks the site — and skip the rest.
+- **Callers** — every function, class or method the diff renamed, moved or removed, and every
+  one whose signature changed (a parameter added, dropped or reordered, a return type changed).
+- **Consumers of a contract** — a shape something outside the changed lines relies on: the
+  fields of serialized output (JSON, XML, an array stored or returned), an API or web-service
+  definition (a route, `db/services.php`, an OpenAPI file), an event's name or payload, a
+  configuration key or its default, a database column's name or type. Changed or removed — not
+  added; a new optional field breaks nobody.
+
+For each, find the dependants with `grep` and judge them. A reference to an old name, a call
+the new signature breaks, a consumer reading a field that is gone or now means something else —
+each is a BLOCKER. A contract whose consumers live outside this repository — a public API, a
+mobile app, another service — cannot be grepped: say so, and a breaking change to it with no
+version or deprecation path is a WARNING that names who has to be told.
+
+**With `--deep`**, dispatch the `research` subagent (`Model: "flash"`) with the list of names,
+old and new, and wait for its answer: it sweeps the whole tree and returns the hits; you judge
+them. Without `--deep`, grep yourself, for what is renamed, removed or changed only — that is
+where a missed dependant breaks the site — and skip the rest.
 
 **The task file narrows it.** When the branch has one, its steps name their `Modify:` paths;
 those are where a moved symbol was moved *from*, so grep them first. It is the difference
-between grepping a repository and grepping five files.
+between grepping a repository and grepping five files. A changed signature is the exception:
+a caller the plan listed and the build missed breaks as surely as one nobody listed, so grep the
+whole tree, skipping what step 2 skips. A name too common to search alone is searched with its
+class or receiver.
 
 ## Step 6 — Say it
 

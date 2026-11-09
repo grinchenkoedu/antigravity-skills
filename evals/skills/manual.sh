@@ -24,6 +24,9 @@ skills="$root/skills"
 for s in plan implement review; do
   [ -f "$skills/gku-$s/SKILL.md" ] || { printf 'no gku-%s/SKILL.md under %s\n' "$s" "$skills" >&2; exit 1; }
 done
+for f in "$skills/gku-plan/manual.md" "$skills/gku-implement/auto.md"; do
+  [ -f "$f" ] || { printf 'no %s\n' "$f" >&2; exit 1; }
+done
 
 fails=0
 note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
@@ -32,7 +35,10 @@ note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 # evals/skills/file-lists.sh does with `Modify:`.
 flat() { tr '\n' ' ' < "$1" | tr -d '`*' | tr -s ' '; }
 planf="$(flat "$skills/gku-plan/SKILL.md")"
+# The mode's own text lives in manual.md, read only when the flag is given.
+manf="$(flat "$skills/gku-plan/manual.md")"
 impf="$(flat "$skills/gku-implement/SKILL.md")"
+autof="$(flat "$skills/gku-implement/auto.md")"
 revf="$(flat "$skills/gku-review/SKILL.md")"
 # -e, because half the phrases below start with the mode's own leading dashes
 # and grep would read them as options.
@@ -44,6 +50,8 @@ grep '^description:' "$skills/gku-plan/SKILL.md" | grep -q -- '--manual' \
   || note 'plan: --manual is missing from description, so nothing advertises it'
 has "$planf" '- --manual —' || note 'plan: --manual has no entry in the Arguments list'
 has "$planf" '## Step 6b' || note 'plan: --manual has no section of its own'
+has "$planf" 'read manual.md beside this file before step 6' \
+  || note 'plan: SKILL.md no longer sends a --manual run to manual.md, so the mode is never read'
 has "$planf" '--manual must be the first token in the prompt' \
   || note 'plan: does not require --manual to be the first token in the prompt'
 has "$planf" 'The word manual without -- is never the flag' \
@@ -52,31 +60,31 @@ has "$planf" 'The word manual without -- is never the flag' \
 # What makes it a manual plan rather than a plan with a different name. Without
 # the first of these the mode writes an implementation to paste, which is what
 # both of its audiences — an AI-agnostic repository and a learner — are avoiding.
-has "$planf" 'Shapes, never paste-ready code' \
+has "$manf" 'Shapes, never paste-ready code' \
   || note 'plan: --manual may write paste-ready code, so the mode buys nothing'
-has "$planf" 'Detail aimed at someone who has not read the code' \
+has "$manf" 'Detail aimed at someone who has not read the code' \
   || note 'plan: --manual writes for someone who already knows the codebase'
-has "$planf" 'Nothing here commits' \
+has "$manf" 'Nothing here commits' \
   || note 'plan: --manual never says that nothing in the file commits for the developer'
-has "$planf" 'Then commit this step yourself' \
+has "$manf" 'Then commit this step yourself' \
   || note 'plan: the manual step shape drops the per-step commit warning'
 
 # The marker the other two skills read. Everything below depends on it.
-has "$planf" 'Mode: manual' || note 'plan: the manual template has no Mode: manual marker'
+has "$manf" 'Mode: manual' || note 'plan: the manual template has no Mode: manual marker'
 
 # The file as the session memory: a manual build spans days and compactions.
-has "$planf" '## Progress' || note 'plan: the manual template has no progress section to resume from'
-has "$planf" '## Q&A' || note 'plan: the manual template keeps no record of what was asked and answered'
-has "$planf" '## Resume prompt' || note 'plan: the manual template gives a new session nothing to start from'
-has "$planf" 'do not write the code for me, and do not commit anything' \
+has "$manf" '## Progress' || note 'plan: the manual template has no progress section to resume from'
+has "$manf" '## Q&A' || note 'plan: the manual template keeps no record of what was asked and answered'
+has "$manf" '## Resume prompt' || note 'plan: the manual template gives a new session nothing to start from'
+has "$manf" 'do not write the code for me, and do not commit anything' \
   || note 'plan: the resume prompt lets the next session write the code it was meant to explain'
 
 # The step keeps the lines the other skills grep and gains the three that make
-# it followable by hand. Cut step 6b out of the file first: the step-6 template
-# above it has Create:/Modify:/Test: of its own, so a check over the whole file
-# would stay green with 6b's dropped — which is the failure worth catching,
+# it followable by hand. Read manual.md alone: the step-6 template in SKILL.md
+# has Create:/Modify:/Test: of its own, so a check over both files would stay
+# green with the manual ones dropped — which is the failure worth catching,
 # since /gku-review greps those paths on a hand-built branch too.
-sixb="$(awk '/^## Step 6b/,/^## Step 7/' "$skills/gku-plan/SKILL.md")"
+sixb="$(cat "$skills/gku-plan/manual.md")"
 for part in 'Create:' 'Modify:' 'Shape:' 'Why:' 'Prove it:'; do
   printf '%s' "$sixb" | grep -qE "^ +- $part" || note "plan: the manual step shape has no $part line"
 done
@@ -94,7 +102,7 @@ has "$impf" 'Mode: manual in its header means stop and ask' \
   || note 'implement: builds a manual plan without asking, which spends what it was written to buy'
 has "$impf" 'only on an explicit yes' \
   || note 'implement: no explicit consent needed before building a manual plan'
-has "$impf" 'a task file marked Mode: manual' \
+has "$autof" 'a task file marked Mode: manual' \
   || note 'implement: --auto is not stopped by a manual plan, and there is nobody there to ask'
 
 # --- /gku-review: it reviews hand-written code, and still never commits ------
