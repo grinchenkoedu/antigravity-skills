@@ -49,6 +49,7 @@ has 'remain banned' || note 'implement: --auto does not carry the --force/--amen
 # the mode has to say it is unattended on disk, and clear it when it is over.
 has '.gku/auto-run' || note 'implement: SKILL.md does not name the marker, so the pointer to auto.md reads as optional'
 inauto '.gku/auto-run' || note 'implement: --auto writes no marker, so the guard cannot tell an unattended run from a watched one'
+inauto 'git rev-parse --git-common-dir' || note 'implement: --auto writes .gku/auto-run via --show-toplevel instead of --git-common-dir, so the guard misses it in a worktree'
 inauto 'rm -f "$root/.gku/auto-run"' || note 'implement: --auto never removes the marker, so it would refuse the developer their own merge afterwards'
 
 # The shape of an unattended run.

@@ -6,7 +6,7 @@ them; this is the procedure for a run nobody is watching.
 **Mark the run on disk before building anything, and clear the marker when it ends:**
 
 ```bash
-root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
 mkdir -p "$root/.gku"
 printf 'started %s in session %s\n' "$(date -u +%FT%TZ)" "${ANTIGRAVITY_SESSION_ID:-unknown}" \
   > "$root/.gku/auto-run"
