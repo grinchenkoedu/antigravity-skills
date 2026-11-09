@@ -6,8 +6,8 @@ Repository containing agent skills, references, family templates, and installati
 
 - **Install / test installation**: `./install.sh`
 - **Run evaluation test suites**: `bash evals/run-all.sh`
-- **Lint shell scripts**: `shellcheck -s bash -S warning bin/gku-survey bin/gku-guard install.sh evals/*.sh evals/*/*.sh`
-- **Check shell syntax**: `bash -n bin/gku-survey bin/gku-guard install.sh`
+- **Lint shell scripts**: `shellcheck -s bash -S warning bin/gku-survey bin/gku-guard bin/gku-agents install.sh evals/*.sh evals/*/*.sh`
+- **Check shell syntax**: `bash -n bin/gku-survey bin/gku-guard bin/gku-agents install.sh evals/*.sh evals/*/*.sh`
 - **Profile repository**: `bin/gku-survey`
 
 <!-- toolkit:begin family-rules -->
@@ -19,9 +19,9 @@ Repository containing agent skills, references, family templates, and installati
 
 ## File layout and conventions
 
-- `skills/gku-<name>/SKILL.md`: Individual skill definitions with YAML frontmatter (`name`, `description`).
-- `gku-reference/`: Shared reference guides loaded by skills on demand (`repo-profile.md`, `exec.md`, `security-checklist.md`, `reports.md`, `code-provenance.md`, `untrusted-input.md`).
-- `bin/`: Standalone, read-only utilities executed by skills (e.g. `bin/gku-survey`).
+- `skills/gku-<name>/SKILL.md`: Individual skill definitions with YAML frontmatter (`name`, `description`) and progressive-disclosure sub-files (`auto.md`, `manual.md`).
+- `gku-reference/`: Shared reference guides loaded by skills on demand (`repo-profile.md`, `exec.md`, `language.md`, `second-opinion.md`, `security-checklist.md`, `reports.md`, `code-provenance.md`, `untrusted-input.md`).
+- `bin/`: Standalone utilities executed by skills (`bin/gku-survey`, `bin/gku-guard`, `bin/gku-agents`).
 - `templates/`: Project family blueprints used by `/gku-init` (`cms.md`, `moodle-plugin.md`, `php-app.md`, `python-app.md`).
 - `install.sh` / `install.ps1`: Automated installers deploying skills to `~/.gemini/skills/` and setting up links for CLI and IDE environments.
 
