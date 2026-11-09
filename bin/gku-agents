@@ -12,7 +12,7 @@
 # Nothing here writes, reaches the network, or checks a login — an agent that is
 # installed but signed out fails on its first run, and the reference says so.
 #
-# Installed to ~/.local/bin/gku-agents (or run as bin/gku-agents in the toolkit).
+# Installed to ~/.gemini/skills/bin/gku-agents (or run as bin/gku-agents in the toolkit).
 
 for name in claude copilot opencode; do
   path="$(command -v "$name" 2>/dev/null)" || continue
