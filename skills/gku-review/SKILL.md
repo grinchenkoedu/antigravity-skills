@@ -343,6 +343,21 @@ is worth acting on.
 Keep it short. It is a message to a colleague: a clean review is a few lines, and one with
 findings is as long as its findings and no longer.
 
+## Step 6b — Offer a second opinion
+
+These are the agent CLIs installed here that gku can run read-only:
+
+`gku-agents 2>/dev/null || true`
+
+If the list is empty, or the findings include a committed secret, or this review was dispatched
+for an unattended `--auto` run or a cold `/gku-fix` run rather than invoked directly by the
+developer, stop here. Otherwise ask one `ask_question` dialog, as section 1 of
+`gku-reference/second-opinion.md` in this plugin says — an option per agent found, and `None` —
+should they review this branch's diff too?
+- **An agent chosen** → follow the rest of `gku-reference/second-opinion.md` at the repository
+  root.
+- **`None`** → done.
+
 ## Rules
 
 - **Never edit, commit or push.** You list; the developer decides, and `/gku-fix` applies.

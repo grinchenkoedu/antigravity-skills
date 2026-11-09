@@ -151,6 +151,20 @@ Write a report file only when there is at least one blocker, or four or more fin
 **primary** repository — not the worktree, and not any repository root — per
 `gku-reference/reports.md` in this plugin. Print its absolute path.
 
+## Step 6b — Offer a second opinion
+
+These are the agent CLIs installed here that gku can run read-only:
+
+`gku-agents 2>/dev/null || true`
+
+If the list is empty, or the findings include a committed secret, go to step 7. Otherwise ask
+one `ask_question` dialog, as section 1 of `gku-reference/second-opinion.md` in this plugin says —
+an option per agent found, and `None` — should they review this pull request's diff too? It is
+someone else's code, and it is sent to those agents' vendors.
+- **An agent chosen** → follow the rest of that reference, inside the worktree, then go on to
+  step 7. The agents read that worktree, so it must still exist.
+- **`None`** → step 7.
+
 ## Step 7 — Offer to clean up
 
 Ask once, with the absolute path:
